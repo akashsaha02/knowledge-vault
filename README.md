@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Knowledge Vault
 
-## Getting Started
+Personal knowledge vault built with Next.js, Ant Design, Prisma, Better Auth, and Supabase.
 
-First, run the development server:
+## Setup
+
+1. Copy environment variables:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Fill in Supabase PostgreSQL URLs, Better Auth secret, and optional Google OAuth credentials.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Install dependencies and run migrations:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npx prisma migrate deploy
+npm run dev
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run dev` — development server
+- `npm run build` — production build
+- `npm run typecheck` — TypeScript check
+- `npm test` — Vitest unit tests
+- `npm run test:e2e` — Playwright E2E tests
+- `npm run db:migrate` — deploy Prisma migrations
+- `npm run db:studio` — Prisma Studio
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment (Vercel)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push to GitHub and import into Vercel
+2. Set all variables from `.env.example`
+3. Run `npx prisma migrate deploy` against production database
+4. Deploy and verify auth, CRUD, uploads, and search
 
-## Deploy on Vercel
+## Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **UI:** Ant Design 6 + Tailwind utilities
+- **Auth:** Better Auth (email/password + Google)
+- **Database:** Supabase PostgreSQL via Prisma 7
+- **Storage:** Supabase Storage (private `attachments` bucket)
+- **Editor:** Tiptap with autosave and revisions
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All sensitive operations go through server actions with workspace authorization checks.
+# knowledge-vault
