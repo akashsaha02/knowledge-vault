@@ -1,0 +1,403 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Better Auth ───────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id
+  name          String
+  email         String
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions          Session[]
+  accounts          Account[]
+  workspaceMembers  WorkspaceMember[]
+  createdItems      Item[]            @relation("ItemCreator")
+  favorites         Favorite[]
+  revisions         Revision[]
+  attachments       Attachment[]      @relation("AttachmentUploader")
+  activities        Activity[]
+  activeWorkspaceId String?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─── Workspaces ────────────────────────────────────────────────────────────
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isPersonal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     WorkspaceMember[]
+  projects    Project[]
+  collections Collection[]
+  items       Item[]
+  tags        Tag[]
+  attachments Attachment[]
+  shareLinks  ShareLink[]
+  activities  Activity[]
+  embeddings  Embedding[]
+
+  @@map("workspace")
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("workspace_member")
+}
+
+// ─── Content model ─────────────────────────────────────────────────────────
+
+enum ItemType {
+  NOTE
+  SNIPPET
+  COMMAND
+  BOOKMARK
+  PROMPT
+  FILE
+  TASK
+  CAPSULE
+}
+
+enum ItemStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  TRASHED
+}
+
+enum Visibility {
+  PRIVATE
+  WORKSPACE
+  PUBLIC
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  slug        String
+  description String?
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  items     Item[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@map("project")
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  slug        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  items     Item[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@map("collection")
+}
+
+model Item {
+  id           String     @id @default(cuid())
+  workspaceId  String
+  projectId    String?
+  collectionId String?
+  parentId     String?
+  createdById  String
+
+  type       ItemType
+  status     ItemStatus @default(ACTIVE)
+  visibility Visibility @default(PRIVATE)
+
+  title     String
+  slug      String
+  plainText String   @default("")
+  content   Json?
+  metadata  Json?
+
+  isPinned   Boolean @default(false)
+  isFavorite Boolean @default(false)
+
+  searchVector Unsupported("tsvector")?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project    Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  parent     Item?       @relation("ItemTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children   Item[]      @relation("ItemTree")
+  createdBy  User        @relation("ItemCreator", fields: [createdById], references: [id])
+
+  tags        ItemTag[]
+  attachments Attachment[]
+  revisions   Revision[]
+  favorites   Favorite[]
+  linksFrom   ItemLink[] @relation("LinkSource")
+  linksTo     ItemLink[] @relation("LinkTarget")
+  embeddings  Embedding[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, status])
+  @@index([workspaceId, type])
+  @@index([workspaceId, updatedAt])
+  @@index([projectId])
+  @@index([parentId])
+  @@map("item")
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  slug        String
+  color       String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  items     ItemTag[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@map("tag")
+}
+
+model ItemTag {
+  itemId String
+  tagId  String
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])
+  @@map("item_tag")
+}
+
+model ItemLink {
+  id         String   @id @default(cuid())
+  sourceId   String
+  targetId   String
+  linkType   String   @default("related")
+  createdAt  DateTime @default(now())
+
+  source Item @relation("LinkSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  target Item @relation("LinkTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+  @@map("item_link")
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  itemId       String
+  uploadedById String
+  storageKey   String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  checksum     String?
+  createdAt    DateTime @default(now())
+
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  item       Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+
+  @@index([itemId])
+  @@index([workspaceId])
+  @@map("attachment")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+  @@map("favorite")
+}
+
+model Revision {
+  id            String   @id @default(cuid())
+  itemId        String
+  createdById   String
+  content       Json?
+  plainText     String   @default("")
+  changeSummary String?
+  name          String?
+  createdAt     DateTime @default(now())
+
+  item      Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([itemId, createdAt])
+  @@map("revision")
+}
+
+model ShareLink {
+  id          String    @id @default(cuid())
+  workspaceId String
+  itemId      String?
+  token       String    @unique
+  password    String?
+  expiresAt   DateTime?
+  allowCopy   Boolean   @default(false)
+  allowDownload Boolean @default(false)
+  viewCount   Int       @default(0)
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("share_link")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@map("activity")
+}
+
+model Embedding {
+  id          String   @id @default(cuid())
+  workspaceId String
+  itemId      String
+  chunkIndex  Int
+  content     String
+  embedding   Unsupported("vector(1536)")?
+  model       String
+  contentHash String
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([workspaceId])
+  @@map("embedding")
+}
+
+model OfflineDraft {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  itemId      String?
+  draftKey    String
+  content     Json?
+  plainText   String   @default("")
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, draftKey])
+  @@index([userId, workspaceId])
+  @@map("offline_draft")
+}
