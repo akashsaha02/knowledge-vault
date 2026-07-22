@@ -1,7 +1,7 @@
 "use client";
 
 import { HistoryOutlined } from "@ant-design/icons";
-import { Button, Collapse, List } from "antd";
+import { Button, Collapse } from "antd";
 import { useState } from "react";
 import { getRevisionsAction } from "@/features/items/item.actions";
 import { formatRelativeTime } from "@/lib/format-date";
@@ -54,39 +54,40 @@ export function RevisionHistory({
                   Load revisions
                 </Button>
               ) : null}
-              {loading ? <p className="text-[var(--muted)] text-sm">Loading...</p> : null}
+              {loading ? <p className="text-(--muted) text-sm">Loading...</p> : null}
               {revisions?.length === 0 ? (
-                <p className="text-[var(--muted)] text-sm">No revisions yet.</p>
+                <p className="text-(--muted) text-sm">No revisions yet.</p>
               ) : null}
               {revisions && revisions.length > 0 ? (
-                <List
-                  size="small"
-                  dataSource={revisions}
-                  renderItem={(revision) => (
-                    <List.Item
-                      actions={[
-                        <Button
-                          key="restore"
-                          type="link"
-                          size="small"
-                          onClick={() =>
-                            void onRestore({
-                              content: revision.content,
-                              plainText: revision.plainText,
-                            })
-                          }
-                        >
-                          Restore
-                        </Button>,
-                      ]}
+                <ul className="m-0 flex list-none flex-col divide-y divide-(--border) p-0">
+                  {revisions.map((revision) => (
+                    <li
+                      key={revision.id}
+                      className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
                     >
-                      <List.Item.Meta
-                        title={revision.changeSummary ?? "Revision"}
-                        description={formatRelativeTime(revision.createdAt)}
-                      />
-                    </List.Item>
-                  )}
-                />
+                      <div className="min-w-0">
+                        <p className="m-0 text-sm">
+                          {revision.changeSummary ?? "Revision"}
+                        </p>
+                        <p className="m-0 text-xs text-(--muted)">
+                          {formatRelativeTime(revision.createdAt)}
+                        </p>
+                      </div>
+                      <Button
+                        type="link"
+                        size="small"
+                        onClick={() =>
+                          void onRestore({
+                            content: revision.content,
+                            plainText: revision.plainText,
+                          })
+                        }
+                      >
+                        Restore
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               ) : null}
             </div>
           ),

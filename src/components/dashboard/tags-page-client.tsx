@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Card, Input, List, Modal } from "antd";
+import { App, Button, Card, Col, Input, Modal, Row } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { PageShell } from "@/components/dashboard/page-shell";
@@ -46,20 +46,18 @@ export function TagsPageClient({ workspaceId }: { workspaceId: string }) {
           }}
         />
       ) : (
-        <List
-          grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
-          dataSource={tags}
-          renderItem={(tag) => (
-            <List.Item>
+        <Row gutter={[16, 16]}>
+          {tags.map((tag) => (
+            <Col key={tag.id} xs={24} sm={12} md={8} lg={6}>
               <Card className="!border-[var(--border)]" title={tag.name}>
                 <p className="text-xs text-[var(--muted)]">{tag.slug}</p>
                 <p className="text-xs text-[var(--muted)]">
                   {tag._count.items} item{tag._count.items === 1 ? "" : "s"}
                 </p>
               </Card>
-            </List.Item>
-          )}
-        />
+            </Col>
+          ))}
+        </Row>
       )}
 
       <Modal

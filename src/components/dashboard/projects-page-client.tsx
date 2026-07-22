@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Card, Form, Input, List, Modal } from "antd";
+import { App, Button, Card, Col, Form, Input, Modal, Row } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { PageShell } from "@/components/dashboard/page-shell";
@@ -50,11 +50,9 @@ export function ProjectsPageClient({ workspaceId }: { workspaceId: string }) {
           }}
         />
       ) : (
-      <List
-        grid={{ gutter: 16, xs: 1, sm: 2, xl: 3, xxl: 4 }}
-        dataSource={projects}
-        renderItem={(project) => (
-          <List.Item>
+      <Row gutter={[16, 16]}>
+        {projects.map((project) => (
+          <Col key={project.id} xs={24} sm={12} xl={8} xxl={6}>
             <Card
               className="h-full !border-[var(--border)]"
               title={project.name}
@@ -80,9 +78,9 @@ export function ProjectsPageClient({ workspaceId }: { workspaceId: string }) {
                 {project._count.items} item{project._count.items === 1 ? "" : "s"}
               </p>
             </Card>
-          </List.Item>
-        )}
-      />
+          </Col>
+        ))}
+      </Row>
       )}
 
       <Modal

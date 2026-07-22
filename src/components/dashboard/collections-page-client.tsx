@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Card, Form, Input, List, Modal } from "antd";
+import { App, Button, Card, Col, Form, Input, Modal, Row } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { PageShell } from "@/components/dashboard/page-shell";
@@ -50,11 +50,9 @@ export function CollectionsPageClient({ workspaceId }: { workspaceId: string }) 
           }}
         />
       ) : (
-      <List
-        grid={{ gutter: 16, xs: 1, sm: 2, xl: 3, xxl: 4 }}
-        dataSource={collections}
-        renderItem={(collection) => (
-          <List.Item>
+      <Row gutter={[16, 16]}>
+        {collections.map((collection) => (
+          <Col key={collection.id} xs={24} sm={12} xl={8} xxl={6}>
             <Card
               className="h-full !border-[var(--border)]"
               title={collection.name}
@@ -82,9 +80,9 @@ export function CollectionsPageClient({ workspaceId }: { workspaceId: string }) 
                 {collection._count.items} item{collection._count.items === 1 ? "" : "s"}
               </p>
             </Card>
-          </List.Item>
-        )}
-      />
+          </Col>
+        ))}
+      </Row>
       )}
 
       <Modal
