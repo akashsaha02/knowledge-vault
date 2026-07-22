@@ -13,6 +13,7 @@ export type ItemListFilters = {
   tagId?: string;
   query?: string;
   limit?: number;
+  offset?: number;
   favoritesOnly?: boolean;
 };
 

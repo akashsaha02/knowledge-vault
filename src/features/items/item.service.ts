@@ -16,6 +16,7 @@ import {
   requireWorkspaceMember,
   requireWorkspacePermission,
 } from "@/features/workspaces/workspace.service";
+import { validateItemReferences } from "@/features/workspaces/workspace-resources";
 import { uniqueSlug } from "@/lib/slug";
 import type { ItemStatus, ItemType, Prisma } from "@/generated/prisma/client";
 import type { ItemListFilters } from "@/features/items/item.types";
@@ -55,6 +56,12 @@ export async function createItemForUser(
   input: CreateItemInput,
 ) {
   await requireWorkspacePermission(userId, input.workspaceId, "create");
+  await validateItemReferences(input.workspaceId, {
+    projectId: input.projectId,
+    collectionId: input.collectionId,
+    parentId: input.parentId,
+    tagIds: input.tagIds,
+  });
   const slug = await resolveUniqueSlug(input.workspaceId, input.title);
 
   const item = await createItem({
@@ -103,6 +110,13 @@ export async function updateItemForUser(
     throw new Error("Insufficient permissions");
   }
 
+  await validateItemReferences(input.workspaceId, {
+    projectId: input.projectId,
+    collectionId: input.collectionId,
+    tagIds: input.tagIds,
+    itemId: input.id,
+  });
+
   const item = await updateItem(input.id, {
     ...(input.title !== undefined && { title: input.title }),
     ...(input.content !== undefined && {
@@ -116,6 +130,9 @@ export async function updateItemForUser(
     ...(input.visibility !== undefined && { visibility: input.visibility }),
     ...(input.isPinned !== undefined && { isPinned: input.isPinned }),
     ...(input.isFavorite !== undefined && { isFavorite: input.isFavorite }),
+    ...(input.metadata !== undefined && {
+      metadata: input.metadata as Prisma.InputJsonValue,
+    }),
     ...(input.projectId !== undefined && {
       project: input.projectId
         ? { connect: { id: input.projectId } }

@@ -9,11 +9,13 @@ const { Title, Paragraph, Text } = Typography;
 
 export function LandingShell() {
   return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+    <div className="min-h-screen bg-[var(--background)]">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] bg-[var(--card)]/90 backdrop-blur">
         <Space>
-          <BookOutlined className="text-lg" />
-          <Text strong>Knowledge Vault</Text>
+          <BookOutlined className="text-lg !text-[var(--accent)]" />
+          <Text strong className="font-mono !text-[var(--accent)]">
+            Knowledge Vault
+          </Text>
         </Space>
         <Space>
           <ThemeToggle />
@@ -28,13 +30,10 @@ export function LandingShell() {
 
       <main className="mx-auto max-w-5xl px-6 py-16">
         <div className="text-center mb-16">
-          <Title
-            level={1}
-            className="!font-[family-name:var(--font-display)] !text-5xl !mb-4"
-          >
+          <Title level={1} className="!font-mono !text-5xl !mb-4 !text-[var(--foreground)]">
             Your personal knowledge vault
           </Title>
-          <Paragraph className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+          <Paragraph className="text-lg !text-[var(--muted)] max-w-2xl mx-auto">
             Capture notes, code snippets, terminal commands, bookmarks, and
             prompts in one secure workspace.
           </Paragraph>
@@ -53,32 +52,32 @@ export function LandingShell() {
         <Row gutter={[24, 24]}>
           {[
             {
-              icon: <BookOutlined />,
+              icon: <BookOutlined className="!text-[var(--accent)]" />,
               title: "Notes & projects",
               description:
                 "Organize knowledge with projects, collections, and tags.",
             },
             {
-              icon: <CodeOutlined />,
+              icon: <CodeOutlined className="!text-[var(--accent)]" />,
               title: "Snippets & commands",
               description:
                 "Save reusable code and shell commands with syntax highlighting.",
             },
             {
-              icon: <RocketOutlined />,
+              icon: <RocketOutlined className="!text-[var(--accent)]" />,
               title: "Search everything",
               description:
                 "Find anything quickly with full-text search across your vault.",
             },
           ].map((feature) => (
             <Col xs={24} md={8} key={feature.title}>
-              <Card>
-                <Space direction="vertical" size="middle">
+              <Card className="!border-[var(--border)] !bg-[var(--card)]">
+                <Space orientation="vertical" size="middle">
                   <span className="text-2xl">{feature.icon}</span>
-                  <Title level={4} className="!mb-0">
+                  <Title level={4} className="!mb-0 !text-[var(--foreground)]">
                     {feature.title}
                   </Title>
-                  <Paragraph className="!mb-0 text-neutral-600 dark:text-neutral-400">
+                  <Paragraph className="!mb-0 !text-[var(--muted)]">
                     {feature.description}
                   </Paragraph>
                 </Space>

@@ -27,7 +27,8 @@ export function WorkspaceSwitcher({
   return (
     <Select
       value={currentWorkspaceId}
-      style={{ minWidth: 220 }}
+      className="workspace-switcher"
+      popupMatchSelectWidth={false}
       options={workspaces.map((m) => ({
         value: m.workspaceId,
         label: m.workspace.name,

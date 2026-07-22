@@ -1,55 +1,47 @@
-import { Card, Col, Row, Statistic, Typography } from "antd";
-import Link from "next/link";
+import { DashboardHome } from "@/components/dashboard/dashboard-home";
 import { listItemsAction } from "@/features/items/item.actions";
+import { listProjectsAction } from "@/features/projects/project.actions";
+import { listTagsAction } from "@/features/tags/tag.actions";
 import { getActiveWorkspace } from "@/features/workspaces/workspace.service";
 import { requireUser } from "@/lib/session";
-
-const { Title, Paragraph } = Typography;
 
 export default async function DashboardPage() {
   const user = await requireUser();
   const workspaceId = await getActiveWorkspace(user.id);
   if (!workspaceId) return null;
 
-  const items = await listItemsAction({ workspaceId, limit: 5 });
+  const [items, projects, tags] = await Promise.all([
+    listItemsAction({ workspaceId, limit: 8 }),
+    listProjectsAction(workspaceId),
+    listTagsAction(workspaceId),
+  ]);
+
+  const [notes, snippets, bookmarks] = await Promise.all([
+    listItemsAction({ workspaceId, type: "NOTE", limit: 1 }),
+    listItemsAction({ workspaceId, type: "SNIPPET", limit: 1 }),
+    listItemsAction({ workspaceId, type: "BOOKMARK", limit: 1 }),
+  ]);
 
   return (
-    <div className="p-6">
-      <Title level={2} className="!font-[family-name:var(--font-display)]">
-        Welcome back, {user.name}
-      </Title>
-      <Paragraph type="secondary">
-        Your personal knowledge vault is ready.
-      </Paragraph>
-
-      <Row gutter={16} className="mt-6">
-        <Col span={8}>
-          <Card>
-            <Statistic title="Recent items" value={items.length} />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Link href="/dashboard/notes">Notes</Link>
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Link href="/dashboard/search">Search</Link>
-          </Card>
-        </Col>
-      </Row>
-
-      <Card title="Recently updated" className="mt-6">
-        <ul className="space-y-2">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Link href="/dashboard/notes">{item.title}</Link>
-              <span className="text-neutral-400 text-sm ml-2">{item.type}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-    </div>
+    <DashboardHome
+      userName={user.name}
+      workspaceId={workspaceId}
+      items={items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        type: item.type,
+        plainText: item.plainText,
+        updatedAt: item.updatedAt,
+        isPinned: item.isPinned,
+        isFavorite: item.isFavorite,
+      }))}
+      stats={{
+        hasNote: notes.length > 0,
+        hasSnippet: snippets.length > 0,
+        hasBookmark: bookmarks.length > 0,
+        hasProject: projects.length > 0,
+        hasTag: tags.length > 0,
+      }}
+    />
   );
 }

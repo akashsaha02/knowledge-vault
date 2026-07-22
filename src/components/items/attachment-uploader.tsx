@@ -1,7 +1,7 @@
 "use client";
 
 import { UploadOutlined } from "@ant-design/icons";
-import { App, Button, List, Upload } from "antd";
+import { App, Button, Upload } from "antd";
 import { useEffect, useState } from "react";
 import {
   confirmUploadAction,
@@ -58,21 +58,32 @@ export function AttachmentUploader({
             message.success("File uploaded");
           } catch (error) {
             onError?.(error as Error);
-            message.error("Upload failed");
+            const msg =
+              error instanceof Error ? error.message : "Upload failed";
+            message.error(
+              msg.includes("SUPABASE_SERVICE_ROLE_KEY")
+                ? "File uploads are not configured. Add SUPABASE_SERVICE_ROLE_KEY to .env and restart the dev server."
+                : msg,
+            );
           }
         }}
       >
         <Button icon={<UploadOutlined />}>Upload attachment</Button>
       </Upload>
-      <List
-        className="mt-3"
-        dataSource={attachments}
-        renderItem={(item) => (
-          <List.Item
-            actions={[
+
+      {attachments.length > 0 ? (
+        <ul className="attachment-list">
+          {attachments.map((item) => (
+            <li key={item.id} className="attachment-list-item">
+              <span className="attachment-list-name">
+                {item.originalName}{" "}
+                <span className="attachment-list-size">
+                  ({Math.round(item.sizeBytes / 1024)} KB)
+                </span>
+              </span>
               <Button
-                key="download"
                 type="link"
+                size="small"
                 onClick={async () => {
                   const { url } = await getDownloadUrlAction(
                     workspaceId,
@@ -82,13 +93,11 @@ export function AttachmentUploader({
                 }}
               >
                 Download
-              </Button>,
-            ]}
-          >
-            {item.originalName} ({Math.round(item.sizeBytes / 1024)} KB)
-          </List.Item>
-        )}
-      />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

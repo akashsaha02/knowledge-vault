@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import type { ItemListFilters } from "@/features/items/item.types";
-import type { ItemStatus, ItemType, Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
+import type { ItemStatus, ItemType } from "@/generated/prisma/client";
 
 export async function findItemById(id: string) {
   return db.item.findUnique({
@@ -43,6 +44,7 @@ export async function findItems(filters: ItemListFilters) {
     },
     orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
     take: filters.limit ?? 50,
+    skip: filters.offset ?? 0,
   });
 }
 
@@ -100,12 +102,9 @@ export async function searchItemsFullText(
   query: string,
   filters?: { type?: ItemType; status?: ItemStatus },
 ) {
-  const typeFilter = filters?.type ? `AND i.type = '${filters.type}'` : "";
-  const statusFilter = filters?.status
-    ? `AND i.status = '${filters.status}'`
-    : "AND i.status = 'ACTIVE'";
+  const status = filters?.status ?? "ACTIVE";
 
-  return db.$queryRawUnsafe<
+  return db.$queryRaw<
     Array<{
       id: string;
       title: string;
@@ -114,19 +113,21 @@ export async function searchItemsFullText(
       rank: number;
     }>
   >(
-    `
+    Prisma.sql`
     SELECT i.id, i.title, i.type::text, i."plainText" as plain_text,
-           ts_rank(i."searchVector", plainto_tsquery('english', $2)) as rank
+           ts_rank(i."searchVector", plainto_tsquery('english', ${query})) as rank
     FROM item i
-    WHERE i."workspaceId" = $1
+    WHERE i."workspaceId" = ${workspaceId}
       AND i."deletedAt" IS NULL
-      ${statusFilter}
-      ${typeFilter}
-      AND i."searchVector" @@ plainto_tsquery('english', $2)
+      AND i.status = ${status}::"ItemStatus"
+      ${
+        filters?.type
+          ? Prisma.sql`AND i.type = ${filters.type}::"ItemType"`
+          : Prisma.empty
+      }
+      AND i."searchVector" @@ plainto_tsquery('english', ${query})
     ORDER BY rank DESC, i."updatedAt" DESC
     LIMIT 50
     `,
-    workspaceId,
-    query,
   );
 }

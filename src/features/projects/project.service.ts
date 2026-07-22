@@ -6,6 +6,7 @@ import {
   findProjects,
   updateProject,
 } from "@/features/projects/project.repository";
+import { requireProjectInWorkspace } from "@/features/workspaces/workspace-resources";
 import { requireWorkspacePermission } from "@/features/workspaces/workspace.service";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { db } from "@/lib/db";
@@ -48,6 +49,7 @@ export async function updateProjectForUser(
   data: { name?: string; description?: string; color?: string },
 ) {
   await requireWorkspacePermission(userId, workspaceId, "editAll");
+  await requireProjectInWorkspace(workspaceId, projectId);
   return updateProject(projectId, data);
 }
 
@@ -57,5 +59,6 @@ export async function deleteProjectForUser(
   projectId: string,
 ) {
   await requireWorkspacePermission(userId, workspaceId, "editAll");
+  await requireProjectInWorkspace(workspaceId, projectId);
   return deleteProject(projectId);
 }

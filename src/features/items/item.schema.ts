@@ -44,6 +44,7 @@ export const searchItemsSchema = z.object({
   collectionId: z.string().optional(),
   tagId: z.string().optional(),
   limit: z.number().min(1).max(100).optional(),
+  offset: z.number().min(0).max(1000).optional(),
 });
 
 export type CreateItemInput = z.infer<typeof createItemSchema>;

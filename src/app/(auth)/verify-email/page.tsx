@@ -1,17 +1,22 @@
+import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md text-center border border-neutral-200 rounded-lg p-8">
-        <h1 className="text-2xl font-display font-semibold mb-4">
-          Verify your email
-        </h1>
-        <p className="text-neutral-600 mb-6">
+    <div className="auth-page">
+      <div className="auth-page-top">
+        <ThemeToggle />
+      </div>
+      <Link href="/" className="auth-page-brand">
+        Knowledge Vault
+      </Link>
+      <div className="auth-page-card">
+        <h1 className="auth-page-title">Verify your email</h1>
+        <p className="auth-page-description">
           Check your inbox for a verification link. Once verified, you can access
           your dashboard.
         </p>
-        <Link href="/sign-in" className="text-blue-600 hover:underline">
+        <Link href="/sign-in" className="auth-page-link">
           Back to sign in
         </Link>
       </div>

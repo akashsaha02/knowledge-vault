@@ -7,6 +7,7 @@ import {
   findAttachments,
   validateFile,
 } from "@/features/attachments/attachment.repository";
+import { assertValidAttachmentStorageKey } from "@/features/attachments/attachment.utils";
 import { getAccessibleItem } from "@/features/items/item.service";
 import { requireWorkspacePermission } from "@/features/workspaces/workspace.service";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -34,7 +35,13 @@ export async function getUploadUrl(
     .createSignedUploadUrl(storageKey);
 
   if (error || !data) {
-    throw new Error(error?.message ?? "Failed to create upload URL");
+    const message = error?.message ?? "Failed to create upload URL";
+    if (message.toLowerCase().includes("does not exist")) {
+      throw new Error(
+        `Storage bucket "${BUCKET}" does not exist. Run: npm run setup:supabase`,
+      );
+    }
+    throw new Error(message);
   }
 
   return { uploadUrl: data.signedUrl, storageKey, token: data.token };
@@ -52,6 +59,7 @@ export async function confirmUpload(
   await requireWorkspacePermission(userId, workspaceId, "create");
   await getAccessibleItem(userId, workspaceId, itemId);
   validateFile(mimeType, sizeBytes);
+  assertValidAttachmentStorageKey(storageKey, workspaceId, userId, itemId);
 
   return createAttachmentRecord({
     workspaceId,

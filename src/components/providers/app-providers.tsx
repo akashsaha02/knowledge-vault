@@ -1,67 +1,43 @@
 "use client";
 
-import { App, ConfigProvider, theme as antdTheme } from "antd";
-import type { ThemeConfig } from "antd";
-import { useEffect, useState } from "react";
+import { App, ConfigProvider } from "antd";
+import { getAppTheme } from "@/lib/theme";
+import { ThemeProvider, useThemeMode } from "@/components/providers/theme-context";
 
-type ThemeMode = "light" | "dark";
-
-function getThemeConfig(mode: ThemeMode, fontFamily: string): ThemeConfig {
-  return {
-    token: {
-      fontFamily,
-      colorPrimary: "#171717",
-      borderRadius: 8,
-    },
-    algorithm:
-      mode === "dark" ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-  };
-}
-
-export function AppProviders({
+function ThemedApp({
   children,
   fontFamily,
+  fontMono,
 }: {
   children: React.ReactNode;
   fontFamily: string;
+  fontMono: string;
 }) {
-  const [mode, setMode] = useState<ThemeMode>("light");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("theme-mode") as ThemeMode | null;
-    if (stored === "light" || stored === "dark") {
-      setMode(stored);
-      document.documentElement.dataset.theme = stored;
-      return;
-    }
-
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial = prefersDark ? "dark" : "light";
-    setMode(initial);
-    document.documentElement.dataset.theme = initial;
-  }, []);
-
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const custom = event as CustomEvent<ThemeMode>;
-      if (custom.detail === "light" || custom.detail === "dark") {
-        setMode(custom.detail);
-        localStorage.setItem("theme-mode", custom.detail);
-        document.documentElement.dataset.theme = custom.detail;
-      }
-    };
-
-    window.addEventListener("theme-change", handler);
-    return () => window.removeEventListener("theme-change", handler);
-  }, []);
+  const { mode } = useThemeMode();
 
   return (
-    <ConfigProvider theme={getThemeConfig(mode, fontFamily)}>
+    <ConfigProvider theme={getAppTheme(mode, fontFamily, fontMono)}>
       <App>{children}</App>
     </ConfigProvider>
   );
 }
 
-export function setThemeMode(mode: ThemeMode) {
-  window.dispatchEvent(new CustomEvent("theme-change", { detail: mode }));
+export function AppProviders({
+  children,
+  fontFamily,
+  fontMono,
+}: {
+  children: React.ReactNode;
+  fontFamily: string;
+  fontMono: string;
+}) {
+  return (
+    <ThemeProvider>
+      <ThemedApp fontFamily={fontFamily} fontMono={fontMono}>
+        {children}
+      </ThemedApp>
+    </ThemeProvider>
+  );
 }
+
+export { setThemeMode } from "@/components/providers/theme-context";

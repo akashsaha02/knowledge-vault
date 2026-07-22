@@ -43,7 +43,7 @@ npm run dev
 - **Auth:** Better Auth (email/password + Google)
 - **Database:** Supabase PostgreSQL via Prisma 7
 - **Storage:** Supabase Storage (private `attachments` bucket)
-- **Editor:** Tiptap with autosave and revisions
+- **Editor:** Quill with autosave and revisions
 
 All sensitive operations go through server actions with workspace authorization checks.
 # knowledge-vault

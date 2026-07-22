@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Noto_Sans, Playfair_Display } from "next/font/google";
+import Script from "next/script";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { AppProviders } from "@/components/providers/app-providers";
 import "./globals.css";
 
-const notoSans = Noto_Sans({
-  variable: "--font-noto-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const playfairDisplay = Playfair_Display({
-  variable: "--font-display",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
+
+const themeInitScript = `(function(){try{var t=localStorage.getItem('theme-mode');if(t==='dark'||t==='light'){document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;}else{document.documentElement.dataset.theme='light';document.documentElement.style.colorScheme='light';}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   title: "Knowledge Vault",
@@ -27,11 +30,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${notoSans.variable} ${playfairDisplay.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
+        <Script id="theme-mode-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         <AntdRegistry>
-          <AppProviders fontFamily="var(--font-noto-sans), sans-serif">
+          <AppProviders
+            fontFamily="var(--font-sans), sans-serif"
+            fontMono="var(--font-mono), monospace"
+          >
             {children}
           </AppProviders>
         </AntdRegistry>

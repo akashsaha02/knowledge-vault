@@ -2,10 +2,11 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { bootstrapPersonalWorkspace } from "@/features/workspaces/workspace.service";
+import { getAuthSecret } from "@/lib/auth-secret";
 import { db } from "@/lib/db";
 
 export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET ?? "development-secret-change-me",
+  secret: getAuthSecret(),
   baseURL:
     process.env.BETTER_AUTH_URL ??
     process.env.NEXT_PUBLIC_APP_URL ??

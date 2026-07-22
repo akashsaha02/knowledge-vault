@@ -12,8 +12,10 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:migrate": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "setup:supabase": "npx tsx scripts/setup-supabase.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.2",
@@ -44,8 +46,10 @@
     "lucide-react": "^1.25.0",
     "next": "16.2.11",
     "pg": "^8.22.0",
+    "quill": "^2.0.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-quill-new": "^3.8.3",
     "react-syntax-highlighter": "^16.1.1",
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.6.0",

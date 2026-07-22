@@ -6,6 +6,7 @@ import {
   findCollections,
   updateCollection,
 } from "@/features/collections/collection.repository";
+import { requireCollectionInWorkspace } from "@/features/workspaces/workspace-resources";
 import { requireWorkspacePermission } from "@/features/workspaces/workspace.service";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { db } from "@/lib/db";
@@ -47,6 +48,7 @@ export async function updateCollectionForUser(
   data: { name?: string; description?: string },
 ) {
   await requireWorkspacePermission(userId, workspaceId, "editAll");
+  await requireCollectionInWorkspace(workspaceId, collectionId);
   return updateCollection(collectionId, data);
 }
 
@@ -56,5 +58,6 @@ export async function deleteCollectionForUser(
   collectionId: string,
 ) {
   await requireWorkspacePermission(userId, workspaceId, "editAll");
+  await requireCollectionInWorkspace(workspaceId, collectionId);
   return deleteCollection(collectionId);
 }

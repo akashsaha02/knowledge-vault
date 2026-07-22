@@ -16,8 +16,25 @@ import {
   searchItemsSchema,
   updateItemSchema,
 } from "@/features/items/item.schema";
+import type { ItemType } from "@/generated/prisma/client";
 import { requireUser } from "@/lib/session";
 import type { ItemListFilters } from "@/features/items/item.types";
+
+const TYPE_PATHS: Partial<Record<ItemType, string>> = {
+  NOTE: "/dashboard/notes",
+  SNIPPET: "/dashboard/snippets",
+  COMMAND: "/dashboard/commands",
+  BOOKMARK: "/dashboard/bookmarks",
+  PROMPT: "/dashboard/prompts",
+  FILE: "/dashboard/files",
+};
+
+function revalidateItemPaths(type?: ItemType) {
+  revalidatePath("/dashboard");
+  if (type && TYPE_PATHS[type]) {
+    revalidatePath(TYPE_PATHS[type]!);
+  }
+}
 
 export async function listItemsAction(filters: ItemListFilters) {
   const user = await requireUser();
@@ -33,7 +50,7 @@ export async function createItemAction(input: unknown) {
   const user = await requireUser();
   const parsed = createItemSchema.parse(input);
   const item = await createItemForUser(user.id, parsed);
-  revalidatePath("/dashboard");
+  revalidateItemPaths(parsed.type);
   return item;
 }
 
@@ -41,28 +58,29 @@ export async function updateItemAction(input: unknown) {
   const user = await requireUser();
   const parsed = updateItemSchema.parse(input);
   const item = await updateItemForUser(user.id, parsed);
-  revalidatePath("/dashboard");
+  revalidateItemPaths(item.type);
   return item;
 }
 
 export async function archiveItemAction(workspaceId: string, itemId: string) {
   const user = await requireUser();
   const item = await archiveItem(user.id, workspaceId, itemId);
-  revalidatePath("/dashboard");
+  revalidateItemPaths(item.type);
   return item;
 }
 
 export async function restoreItemAction(workspaceId: string, itemId: string) {
   const user = await requireUser();
   const item = await restoreItem(user.id, workspaceId, itemId);
-  revalidatePath("/dashboard");
+  revalidateItemPaths(item.type);
   return item;
 }
 
 export async function trashItemAction(workspaceId: string, itemId: string) {
   const user = await requireUser();
+  const existing = await getAccessibleItem(user.id, workspaceId, itemId);
   const item = await trashItem(user.id, workspaceId, itemId);
-  revalidatePath("/dashboard");
+  revalidateItemPaths(existing.type);
   return item;
 }
 

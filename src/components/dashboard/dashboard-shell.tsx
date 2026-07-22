@@ -1,9 +1,10 @@
 "use client";
 
-import { WorkspaceSwitcher } from "@/components/dashboard/workspace-switcher";
 import { CommandPalette } from "@/components/command-palette";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
+import { MobileDrawer } from "@/components/dashboard/mobile-drawer";
+import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { Layout } from "antd";
 
 const { Content } = Layout;
@@ -22,19 +23,21 @@ export function DashboardShell({
   workspaceName,
 }: DashboardShellProps) {
   return (
-    <Layout className="min-h-screen">
+    <Layout className="dashboard-root">
       <DashboardSidebar />
-      <Layout>
-        <DashboardHeader userName={userName} workspaceName={workspaceName} />
-        <div className="px-4 py-2 border-b border-neutral-100">
-          <WorkspaceSwitcher
-            currentWorkspaceId={workspaceId}
-            currentWorkspaceName={workspaceName}
-          />
-        </div>
-        <Content className="bg-white">{children}</Content>
+      <Layout className="dashboard-main">
+        <DashboardHeader
+          userName={userName}
+          workspaceId={workspaceId}
+          workspaceName={workspaceName}
+        />
+        <Content id="main-content" className="dashboard-content" tabIndex={-1}>
+          {children}
+        </Content>
+        <MobileNav />
       </Layout>
-      <CommandPalette />
+      <MobileDrawer />
+      <CommandPalette workspaceId={workspaceId} />
     </Layout>
   );
 }

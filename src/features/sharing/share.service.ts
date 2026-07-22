@@ -2,7 +2,10 @@ import "server-only";
 
 import { randomBytes } from "crypto";
 import { db } from "@/lib/db";
-import { requireWorkspacePermission } from "@/features/workspaces/workspace.service";
+import {
+  AuthorizationError,
+  requireWorkspacePermission,
+} from "@/features/workspaces/workspace.service";
 
 export async function createShareLink(
   userId: string,
@@ -37,8 +40,17 @@ export async function revokeShareLink(
   shareLinkId: string,
 ) {
   await requireWorkspacePermission(userId, workspaceId, "editAll");
+
+  const link = await db.shareLink.findFirst({
+    where: { id: shareLinkId, workspaceId },
+  });
+
+  if (!link) {
+    throw new AuthorizationError("Share link not found");
+  }
+
   return db.shareLink.update({
-    where: { id: shareLinkId },
+    where: { id: link.id },
     data: { revokedAt: new Date() },
   });
 }
@@ -48,4 +60,31 @@ export async function getShareLinkByToken(token: string) {
   if (!link || link.revokedAt) return null;
   if (link.expiresAt && link.expiresAt < new Date()) return null;
   return link;
+}
+
+export async function getPublicSharedContent(token: string) {
+  const link = await getShareLinkByToken(token);
+  if (!link) return null;
+
+  await db.shareLink.update({
+    where: { id: link.id },
+    data: { viewCount: { increment: 1 } },
+  });
+
+  if (!link.itemId) {
+    return { link, item: null };
+  }
+
+  const item = await db.item.findFirst({
+    where: {
+      id: link.itemId,
+      workspaceId: link.workspaceId,
+      deletedAt: null,
+    },
+    include: {
+      tags: { include: { tag: true } },
+    },
+  });
+
+  return { link, item };
 }
