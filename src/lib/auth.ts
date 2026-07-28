@@ -38,6 +38,13 @@ export const auth = betterAuth({
     },
   },
 
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+    },
+  },
+
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
@@ -57,7 +64,11 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          await bootstrapPersonalWorkspace(user.id, user.name || "User");
+          try {
+            await bootstrapPersonalWorkspace(user.id, user.name || "User");
+          } catch (error) {
+            console.error("Failed to bootstrap personal workspace:", error);
+          }
         },
       },
     },

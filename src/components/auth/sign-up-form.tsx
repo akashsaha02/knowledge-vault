@@ -112,7 +112,14 @@ export function SignUpForm() {
         variant="secondary"
         className="w-full"
         onClick={async () => {
-          await authClient.signIn.social({ provider: "google" });
+          const { error } = await authClient.signIn.social({
+            provider: "google",
+            callbackURL: "/dashboard",
+            errorCallbackURL: "/sign-up",
+          });
+          if (error) {
+            toast.error(error.message ?? "Google sign in failed");
+          }
         }}
       >
         Continue with Google

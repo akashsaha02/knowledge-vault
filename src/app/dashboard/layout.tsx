@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import {
+  bootstrapPersonalWorkspace,
   getActiveWorkspace,
   getUserWorkspaces,
 } from "@/features/workspaces/workspace.service";
@@ -12,7 +13,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const workspaceId = await getActiveWorkspace(user.id);
+  let workspaceId = await getActiveWorkspace(user.id);
+
+  if (!workspaceId) {
+    await bootstrapPersonalWorkspace(user.id, user.name || "User");
+    workspaceId = await getActiveWorkspace(user.id);
+  }
 
   if (!workspaceId) {
     redirect("/sign-up");
