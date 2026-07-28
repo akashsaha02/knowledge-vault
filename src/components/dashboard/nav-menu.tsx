@@ -1,133 +1,137 @@
 "use client";
 
-import {
-  BookOutlined,
-  CodeOutlined,
-  ConsoleSqlOutlined,
-  DeleteOutlined,
-  FileOutlined,
-  FolderOpenOutlined,
-  HeartOutlined,
-  HomeOutlined,
-  InboxOutlined,
-  ProjectOutlined,
-  RobotOutlined,
-  SearchOutlined,
-  SettingOutlined,
-  StarOutlined,
-} from "@ant-design/icons";
-import { Menu } from "antd";
-import type { MenuProps } from "antd";
-import { usePathname, useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { navIcon } from "@/lib/nav-icons";
 import {
   BOTTOM_NAV,
+  COLLAPSED_MORE_NAV,
   getSelectedNavKey,
-  LIBRARY_NAV,
   MAIN_NAV,
-  ORGANIZE_NAV,
+  MORE_NAV,
 } from "@/lib/nav-config";
-
-const ICONS: Record<string, React.ReactNode> = {
-  "/dashboard": <HomeOutlined />,
-  "/dashboard/inbox": <InboxOutlined />,
-  "/dashboard/search": <SearchOutlined />,
-  "/dashboard/notes": <BookOutlined />,
-  "/dashboard/snippets": <CodeOutlined />,
-  "/dashboard/commands": <ConsoleSqlOutlined />,
-  "/dashboard/bookmarks": <StarOutlined />,
-  "/dashboard/prompts": <RobotOutlined />,
-  "/dashboard/files": <FileOutlined />,
-  "/dashboard/projects": <ProjectOutlined />,
-  "/dashboard/collections": <FolderOpenOutlined />,
-  "/dashboard/tags": <FolderOpenOutlined />,
-  "/dashboard/favorites": <HeartOutlined />,
-  "/dashboard/archive": <FolderOpenOutlined />,
-  "/dashboard/trash": <DeleteOutlined />,
-  "/dashboard/settings": <SettingOutlined />,
-};
-
-function toMenuItems(
-  items: { key: string; label: string }[],
-): NonNullable<MenuProps["items"]> {
-  return items.map((item) => ({
-    key: item.key,
-    icon: ICONS[item.key],
-    label: item.label,
-  }));
-}
+import { cn } from "@/lib/utils";
 
 type DashboardNavMenuProps = {
   onNavigate?: () => void;
-  defaultLibraryOpen?: boolean;
-  defaultOrganizeOpen?: boolean;
   showBottomNav?: boolean;
+  collapsed?: boolean;
 };
+
+function NavLink({
+  href,
+  label,
+  active,
+  collapsed,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
+  const Icon = navIcon(href);
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "nav-link",
+        active && "nav-link--active",
+        collapsed && "nav-link--collapsed",
+      )}
+      aria-current={active ? "page" : undefined}
+      title={collapsed ? label : undefined}
+      onClick={onNavigate}
+    >
+      {Icon}
+      {!collapsed ? <span>{label}</span> : null}
+    </Link>
+  );
+}
 
 export function DashboardNavMenu({
   onNavigate,
-  defaultLibraryOpen = true,
-  defaultOrganizeOpen = false,
   showBottomNav = true,
+  collapsed = false,
 }: DashboardNavMenuProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const selectedKey = getSelectedNavKey(pathname);
-
-  const items: MenuProps["items"] = useMemo(
-    () => [
-      ...toMenuItems(MAIN_NAV),
-      {
-        key: "library",
-        label: "Library",
-        children: toMenuItems(LIBRARY_NAV),
-      },
-      {
-        key: "organize",
-        label: "Organize",
-        children: toMenuItems(ORGANIZE_NAV),
-      },
-    ],
-    [],
-  );
-
-  const bottomItems = useMemo(() => toMenuItems(BOTTOM_NAV), []);
-
-  const defaultOpenKeys = useMemo(() => {
-    const keys: string[] = [];
-    if (defaultLibraryOpen) keys.push("library");
-    if (defaultOrganizeOpen) keys.push("organize");
-    if (LIBRARY_NAV.some((item) => item.key === selectedKey)) keys.push("library");
-    if (ORGANIZE_NAV.some((item) => item.key === selectedKey)) keys.push("organize");
-    return [...new Set(keys)];
-  }, [defaultLibraryOpen, defaultOrganizeOpen, selectedKey]);
+  const isInMore = MORE_NAV.some((item) => item.key === selectedKey);
+  const [moreOpen, setMoreOpen] = useState(isInMore);
 
   return (
     <div className="dashboard-nav-menu">
       <div className="dashboard-nav-main">
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          defaultOpenKeys={defaultOpenKeys}
-          items={items}
-          onClick={({ key }) => {
-            if (key === "library" || key === "organize") return;
-            router.push(key);
-            onNavigate?.();
-          }}
-        />
-      </div>
-      {showBottomNav ? (
-        <div className="dashboard-nav-bottom">
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            items={bottomItems}
-            onClick={({ key }) => {
-              router.push(key);
-              onNavigate?.();
-            }}
+        {MAIN_NAV.map((item) => (
+          <NavLink
+            key={item.key}
+            href={item.key}
+            label={item.label}
+            active={selectedKey === item.key}
+            collapsed={collapsed}
+            onNavigate={onNavigate}
           />
+        ))}
+
+        {!collapsed ? (
+          <>
+            <button
+              type="button"
+              className={cn("nav-link w-full", isInMore && "nav-link--active")}
+              onClick={() => setMoreOpen((o) => !o)}
+              aria-expanded={moreOpen}
+            >
+              {navIcon("more")}
+              <span className="flex-1 text-left">More</span>
+              <ChevronDown
+                className={cn("h-4 w-4 transition-transform", moreOpen && "rotate-180")}
+              />
+            </button>
+            {moreOpen ? (
+              <div className="nav-more-children">
+                {MORE_NAV.map((item) => (
+                  <NavLink
+                    key={item.key}
+                    href={item.key}
+                    label={item.label}
+                    active={selectedKey === item.key}
+                    onNavigate={onNavigate}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <>
+            {COLLAPSED_MORE_NAV.map((item) => (
+              <NavLink
+                key={item.key}
+                href={item.key}
+                label={item.label}
+                active={selectedKey === item.key}
+                collapsed
+                onNavigate={onNavigate}
+              />
+            ))}
+          </>
+        )}
+      </div>
+
+      {showBottomNav && !collapsed ? (
+        <div className="dashboard-nav-bottom">
+          {BOTTOM_NAV.map((item) => (
+            <NavLink
+              key={item.key}
+              href={item.key}
+              label={item.label}
+              active={selectedKey === item.key}
+              collapsed={collapsed}
+              onNavigate={onNavigate}
+            />
+          ))}
         </div>
       ) : null}
     </div>

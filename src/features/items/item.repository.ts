@@ -16,11 +16,18 @@ export async function findItemById(id: string) {
 }
 
 export async function findItems(filters: ItemListFilters) {
+  const isTrashView = filters.status === "TRASHED";
+
   const where: Prisma.ItemWhereInput = {
     workspaceId: filters.workspaceId,
-    deletedAt: null,
-    ...(filters.type && { type: filters.type }),
-    ...(filters.status && { status: filters.status }),
+    ...(isTrashView
+      ? { deletedAt: { not: null }, status: "TRASHED" }
+      : { deletedAt: null, ...(filters.status && { status: filters.status }) }),
+    ...(filters.types?.length
+      ? { type: { in: filters.types } }
+      : filters.type
+        ? { type: filters.type }
+        : {}),
     ...(filters.projectId && { projectId: filters.projectId }),
     ...(filters.collectionId && { collectionId: filters.collectionId }),
     ...(filters.tagId && {
@@ -33,6 +40,12 @@ export async function findItems(filters: ItemListFilters) {
       ],
     }),
     ...(filters.favoritesOnly && { isFavorite: true }),
+    ...(filters.userId && {
+      OR: [
+        { visibility: { not: "PRIVATE" } },
+        { createdById: filters.userId },
+      ],
+    }),
   };
 
   return db.item.findMany({
@@ -68,6 +81,18 @@ export async function softDeleteItem(id: string) {
     where: { id },
     data: { deletedAt: new Date(), status: "TRASHED" },
   });
+}
+
+export async function restoreDeletedItem(id: string, status: ItemStatus = "ACTIVE") {
+  return db.item.update({
+    where: { id },
+    data: { deletedAt: null, status },
+    include: { tags: { include: { tag: true } } },
+  });
+}
+
+export async function hardDeleteItem(id: string) {
+  return db.item.delete({ where: { id } });
 }
 
 export async function createRevision(data: {

@@ -1,13 +1,5 @@
-import { getActiveWorkspace } from "@/features/workspaces/workspace.service";
-import { requireUser } from "@/lib/session";
-import { DashboardItemPage } from "@/components/dashboard/dashboard-item-page";
+import { redirect } from "next/navigation";
 
-export default async function InboxPage() {
-  return (
-    <DashboardItemPage
-      title="Inbox"
-      emptyDescription="Inbox is empty"
-      status="DRAFT"
-    />
-  );
+export default function InboxPage() {
+  redirect("/dashboard/notes");
 }

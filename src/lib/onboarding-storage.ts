@@ -66,10 +66,7 @@ export const CHECKLIST_TASKS: {
   label: string;
   href: string;
 }[] = [
-  { id: "note", label: "Create your first note", href: "/dashboard/notes?new=1" },
-  { id: "snippet", label: "Save a code snippet", href: "/dashboard/snippets?new=1" },
-  { id: "bookmark", label: "Add a bookmark", href: "/dashboard/bookmarks?new=1" },
-  { id: "project", label: "Create a project", href: "/dashboard/projects" },
-  { id: "search", label: "Try global search", href: "/dashboard/search" },
-  { id: "tag", label: "Add a tag to an item", href: "/dashboard/notes" },
+  { id: "note", label: "Write your first note", href: "/dashboard/notes?new=1" },
+  { id: "bookmark", label: "Save an interesting link", href: "/dashboard/bookmarks?new=1" },
+  { id: "project", label: "Create your first project", href: "/dashboard/projects" },
 ];

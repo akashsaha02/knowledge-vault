@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   createCollectionForUser,
   deleteCollectionForUser,
+  getCollectionForUser,
   listCollections,
   updateCollectionForUser,
 } from "@/features/collections/collection.service";
@@ -12,6 +13,14 @@ import { requireUser } from "@/lib/session";
 export async function listCollectionsAction(workspaceId: string) {
   const user = await requireUser();
   return listCollections(user.id, workspaceId);
+}
+
+export async function getCollectionAction(
+  workspaceId: string,
+  collectionId: string,
+) {
+  const user = await requireUser();
+  return getCollectionForUser(user.id, workspaceId, collectionId);
 }
 
 export async function createCollectionAction(

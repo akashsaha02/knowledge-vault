@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   createProjectForUser,
   deleteProjectForUser,
+  getProjectForUser,
   listProjects,
   updateProjectForUser,
 } from "@/features/projects/project.service";
@@ -12,6 +13,11 @@ import { requireUser } from "@/lib/session";
 export async function listProjectsAction(workspaceId: string) {
   const user = await requireUser();
   return listProjects(user.id, workspaceId);
+}
+
+export async function getProjectAction(workspaceId: string, projectId: string) {
+  const user = await requireUser();
+  return getProjectForUser(user.id, workspaceId, projectId);
 }
 
 export async function createProjectAction(

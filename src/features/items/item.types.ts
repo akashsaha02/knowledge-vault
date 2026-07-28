@@ -6,7 +6,9 @@ export type ItemWithTags = Item & {
 
 export type ItemListFilters = {
   workspaceId: string;
+  userId?: string;
   type?: ItemType;
+  types?: ItemType[];
   status?: ItemStatus;
   projectId?: string;
   collectionId?: string;

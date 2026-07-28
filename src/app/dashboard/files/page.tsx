@@ -5,7 +5,7 @@ export default function FilesPage() {
     <DashboardItemPage
       type="FILE"
       title="Files"
-      emptyDescription="No files yet"
+      emptyDescription="Upload a file to keep it safe here"
     />
   );
 }

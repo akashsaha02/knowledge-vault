@@ -1,12 +1,29 @@
 "use client";
 
-import { CopyOutlined } from "@ant-design/icons";
-import { App, Alert, Button, Select, Space } from "antd";
-import { useEffect, useState } from "react";
+import { AlertTriangle, Copy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { detectCommandRisk, RISK_LABELS } from "@/features/items/command.utils";
-import { CodeEditor } from "@/components/editor/code-editor";
+import { CodeMirrorEditor } from "@/components/editor/codemirror-editor";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const SHELLS = ["bash", "zsh", "fish", "powershell", "cmd"];
+const SHELLS = ["bash", "zsh", "fish", "powershell", "cmd"] as const;
+
+const SHELL_PROMPTS: Record<string, string> = {
+  bash: "$",
+  zsh: "$",
+  fish: ">",
+  powershell: "PS>",
+  cmd: ">",
+};
 
 type CommandEditorProps = {
   command: string;
@@ -25,90 +42,134 @@ export function CommandEditor({
   undoCommand = "",
   onSave,
 }: CommandEditorProps) {
-  const { message } = App.useApp();
   const [localCommand, setLocalCommand] = useState(command);
   const [localShell, setLocalShell] = useState(shell);
   const [localUndo, setLocalUndo] = useState(undoCommand ?? "");
+  const commandRef = useRef(command);
+  const undoRef = useRef(undoCommand ?? "");
   const risk = detectCommandRisk(localCommand);
+  const prompt = SHELL_PROMPTS[localShell] ?? "$";
 
   useEffect(() => {
     setLocalCommand(command);
+    commandRef.current = command;
+  }, [command]);
+
+  useEffect(() => {
     setLocalShell(shell);
+  }, [shell]);
+
+  useEffect(() => {
     setLocalUndo(undoCommand ?? "");
-  }, [command, shell, undoCommand]);
+    undoRef.current = undoCommand ?? "";
+  }, [undoCommand]);
 
   async function persist(fields?: Partial<{ command: string; shell: string; undoCommand: string }>) {
     await onSave({
-      command: fields?.command ?? localCommand,
+      command: fields?.command ?? commandRef.current,
       shell: fields?.shell ?? localShell,
-      undoCommand: fields?.undoCommand ?? localUndo,
+      undoCommand: fields?.undoCommand ?? undoRef.current,
     });
   }
 
   return (
-    <div className="command-editor">
-      <Space className="mb-3" wrap>
+    <div className="command-editor terminal-editor">
+      <div className="terminal-editor-header">
         <Select
           value={localShell}
-          onChange={(value) => {
+          onValueChange={(value) => {
             setLocalShell(value);
             void persist({ shell: value });
           }}
-          options={SHELLS.map((s) => ({ value: s, label: s }))}
-          style={{ width: 140 }}
-          aria-label="Shell type"
-        />
+        >
+          <SelectTrigger className="w-[140px] terminal-shell-select" aria-label="Shell type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SHELLS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Badge
+          variant="outline"
+          className={
+            risk === "destructive"
+              ? "terminal-risk terminal-risk--destructive"
+              : risk === "review"
+                ? "terminal-risk terminal-risk--review"
+                : "terminal-risk terminal-risk--safe"
+          }
+        >
+          {RISK_LABELS[risk]}
+        </Badge>
         <Button
-          icon={<CopyOutlined />}
+          type="button"
+          variant="secondary"
+          size="sm"
           onClick={async () => {
             await navigator.clipboard.writeText(localCommand);
-            message.success("Copied to clipboard");
+            toast.success("Copied to clipboard");
           }}
         >
+          <Copy className="h-4 w-4" />
           Copy
         </Button>
-      </Space>
-
-      {risk !== "safe" ? (
-        <Alert
-          className="mb-3"
-          type={risk === "destructive" ? "error" : "warning"}
-          message={RISK_LABELS[risk]}
-          showIcon
-        />
-      ) : null}
-
-      <CodeEditor
-        value={localCommand}
-        onChange={setLocalCommand}
-        onSave={async (value) => {
-          setLocalCommand(value);
-          await persist({ command: value });
-        }}
-        placeholder="Enter command..."
-        rows={4}
-        label="Command"
-      />
-
-      <div className="mt-4">
-        <CodeEditor
-          value={localUndo}
-          onChange={setLocalUndo}
-          onSave={async (value) => {
-            setLocalUndo(value);
-            await persist({ undoCommand: value });
-          }}
-          placeholder="Optional undo command..."
-          rows={2}
-          label="Undo command"
-        />
       </div>
 
-      {localCommand ? (
-        <pre className="command-preview mt-4" aria-label="Command preview">
-          <code>{localCommand}</code>
-        </pre>
+      {risk !== "safe" ? (
+        <div className="terminal-risk-banner" role="alert">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{RISK_LABELS[risk]}</span>
+        </div>
       ) : null}
+
+      <div className="terminal-panel">
+        <div className="terminal-panel-bar">
+          <span className="terminal-dot terminal-dot--red" />
+          <span className="terminal-dot terminal-dot--yellow" />
+          <span className="terminal-dot terminal-dot--green" />
+          <span className="terminal-panel-title">{localShell}</span>
+        </div>
+        <div className="terminal-line">
+          <span className="terminal-prompt">{prompt}</span>
+          <div className="terminal-input-wrap">
+            <CodeMirrorEditor
+              value={localCommand}
+              language="bash"
+              minHeight="120px"
+              placeholder="Enter command..."
+              aria-label="Command"
+              className="terminal-cm"
+              onChange={(value) => {
+                setLocalCommand(value);
+                commandRef.current = value;
+              }}
+              onBlur={() => void persist({ command: commandRef.current })}
+            />
+          </div>
+        </div>
+        <div className="terminal-line terminal-line--undo">
+          <span className="terminal-prompt terminal-prompt--muted">undo:</span>
+          <div className="terminal-input-wrap">
+            <CodeMirrorEditor
+              value={localUndo}
+              language="bash"
+              minHeight="72px"
+              placeholder="Optional undo command..."
+              aria-label="Undo command"
+              className="terminal-cm"
+              onChange={(value) => {
+                setLocalUndo(value);
+                undoRef.current = value;
+              }}
+              onBlur={() => void persist({ undoCommand: undoRef.current })}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

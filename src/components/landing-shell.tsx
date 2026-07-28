@@ -1,91 +1,103 @@
 "use client";
 
-import { BookOutlined, CodeOutlined, RocketOutlined } from "@ant-design/icons";
-import { Button, Card, Col, Row, Space, Typography } from "antd";
+import { BookOpen, Code2, Folder, Link as LinkIcon, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { Button } from "@/components/ui/button";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 
-const { Title, Paragraph, Text } = Typography;
+const FEATURES = [
+  {
+    icon: BookOpen,
+    title: "Write notes",
+    description: "Capture thoughts and ideas in a focused editor with bold color accents.",
+    accent: "notes" as const,
+  },
+  {
+    icon: Code2,
+    title: "Save code & commands",
+    description: "Syntax-highlighted snippets and a terminal-style command vault.",
+    accent: "code" as const,
+  },
+  {
+    icon: LinkIcon,
+    title: "Save useful links",
+    description: "Bookmark websites and pages so you can find them later.",
+    accent: "links" as const,
+  },
+  {
+    icon: Folder,
+    title: "Organise by project",
+    description: "Group notes and links into projects so everything stays in its place.",
+    accent: "projects" as const,
+  },
+] as const;
 
 export function LandingShell() {
   return (
-    <div className="min-h-screen bg-[var(--background)]">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] bg-[var(--card)]/90 backdrop-blur">
-        <Space>
-          <BookOutlined className="text-lg !text-[var(--accent)]" />
-          <Text strong className="font-mono !text-[var(--accent)]">
-            Knowledge Vault
-          </Text>
-        </Space>
-        <Space>
-          <ThemeToggle />
-          <Link href="/sign-in">
-            <Button type="text">Sign in</Button>
-          </Link>
-          <Link href="/sign-up">
-            <Button type="primary">Get started</Button>
-          </Link>
-        </Space>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-6 py-16">
-        <div className="text-center mb-16">
-          <Title level={1} className="!font-mono !text-5xl !mb-4 !text-[var(--foreground)]">
-            Your personal knowledge vault
-          </Title>
-          <Paragraph className="text-lg !text-[var(--muted)] max-w-2xl mx-auto">
-            Capture notes, code snippets, terminal commands, bookmarks, and
-            prompts in one secure workspace.
-          </Paragraph>
-          <Space className="mt-6">
-            <Link href="/sign-up">
-              <Button type="primary" size="large" icon={<RocketOutlined />}>
-                Start for free
-              </Button>
-            </Link>
-            <Link href="/sign-in">
-              <Button size="large">Sign in</Button>
-            </Link>
-          </Space>
+    <div className="landing-page">
+      <nav className="landing-nav-wrap" aria-label="Main navigation">
+        <div className="landing-nav-glass">
+          <BrandLogo href="/" variant="lockup" className="landing-logo" />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/sign-in">Sign in</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/sign-up">Get started</Link>
+            </Button>
+          </div>
         </div>
+      </nav>
 
-        <Row gutter={[24, 24]}>
-          {[
-            {
-              icon: <BookOutlined className="!text-[var(--accent)]" />,
-              title: "Notes & projects",
-              description:
-                "Organize knowledge with projects, collections, and tags.",
-            },
-            {
-              icon: <CodeOutlined className="!text-[var(--accent)]" />,
-              title: "Snippets & commands",
-              description:
-                "Save reusable code and shell commands with syntax highlighting.",
-            },
-            {
-              icon: <RocketOutlined className="!text-[var(--accent)]" />,
-              title: "Search everything",
-              description:
-                "Find anything quickly with full-text search across your vault.",
-            },
-          ].map((feature) => (
-            <Col xs={24} md={8} key={feature.title}>
-              <Card className="!border-[var(--border)] !bg-[var(--card)]">
-                <Space orientation="vertical" size="middle">
-                  <span className="text-2xl">{feature.icon}</span>
-                  <Title level={4} className="!mb-0 !text-[var(--foreground)]">
-                    {feature.title}
-                  </Title>
-                  <Paragraph className="!mb-0 !text-[var(--muted)]">
-                    {feature.description}
-                  </Paragraph>
-                </Space>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </main>
+      <section className="landing-hero-section">
+        <div className="landing-hero-content">
+          <div className="landing-hero-badge">
+            <Sparkles size={14} className="text-[var(--brand)]" aria-hidden="true" />
+            Notes, links &amp; code — free to use
+          </div>
+          <h1 className="landing-hero-title">{BRAND_TAGLINE}</h1>
+          <p className="landing-hero-text">
+            Notes, links, and code — organised in your own private corner of the web.
+          </p>
+          <div className="landing-hero-actions">
+            <Button size="lg" asChild>
+              <Link href="/sign-up">Start for free</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/sign-in">Sign in</Link>
+            </Button>
+          </div>
+          <p className="landing-meta">{BRAND_NAME} — made for curious minds</p>
+        </div>
+      </section>
+
+      <section className="landing-features-section" aria-label="Features">
+        <div className="landing-features-grid">
+          {FEATURES.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <article
+                key={feature.title}
+                className={`landing-feature-card landing-feature-card--${feature.accent}`}
+              >
+                <div className="landing-feature-icon">
+                  <Icon size={22} strokeWidth={1.75} aria-hidden="true" />
+                </div>
+                <h2 className="landing-feature-title">{feature.title}</h2>
+                <p className="landing-feature-text">{feature.description}</p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <footer className="landing-footer">
+        <BrandLogo href="/" variant="lockup" />
+        <p className="landing-footer-text">
+          {BRAND_NAME} — your private corner for ideas
+        </p>
+      </footer>
     </div>
   );
 }

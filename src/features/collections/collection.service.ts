@@ -3,6 +3,7 @@ import "server-only";
 import {
   createCollection,
   deleteCollection,
+  findCollectionById,
   findCollections,
   updateCollection,
 } from "@/features/collections/collection.repository";
@@ -14,6 +15,16 @@ import { db } from "@/lib/db";
 export async function listCollections(userId: string, workspaceId: string) {
   await requireWorkspacePermission(userId, workspaceId, "view");
   return findCollections(workspaceId);
+}
+
+export async function getCollectionForUser(
+  userId: string,
+  workspaceId: string,
+  collectionId: string,
+) {
+  await requireWorkspacePermission(userId, workspaceId, "view");
+  await requireCollectionInWorkspace(workspaceId, collectionId);
+  return findCollectionById(collectionId);
 }
 
 export async function createCollectionForUser(

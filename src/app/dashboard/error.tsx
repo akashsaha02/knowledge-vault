@@ -1,7 +1,8 @@
 "use client";
 
-import { Button, Result } from "antd";
+import Link from "next/link";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardError({
   error,
@@ -16,19 +17,20 @@ export default function DashboardError({
 
   return (
     <div className="flex flex-1 items-center justify-center p-6">
-      <Result
-        status="error"
-        title="Dashboard error"
-        subTitle="Something went wrong while loading this page."
-        extra={[
-          <Button key="retry" type="primary" onClick={reset}>
-            Try again
-          </Button>,
-          <Button key="dashboard" href="/dashboard">
-            Back to dashboard
-          </Button>,
-        ]}
-      />
+      <div className="text-center max-w-md">
+        <h1 className="text-2xl font-semibold text-[var(--foreground)]">
+          Dashboard error
+        </h1>
+        <p className="mt-2 text-[var(--muted)]">
+          Something went wrong while loading this page.
+        </p>
+        <div className="flex gap-2 justify-center mt-6">
+          <Button onClick={reset}>Try again</Button>
+          <Button variant="secondary" asChild>
+            <Link href="/dashboard">Back to dashboard</Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

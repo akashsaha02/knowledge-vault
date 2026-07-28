@@ -1,19 +1,21 @@
 "use client";
 
 import {
-  DeleteOutlined,
-  InboxOutlined,
-  MoreOutlined,
-  PushpinOutlined,
-  PushpinFilled,
-  StarOutlined,
-  StarFilled,
-  UndoOutlined,
-} from "@ant-design/icons";
-import { Button, Dropdown, Popconfirm, Space, Tooltip, Typography } from "antd";
+  Archive,
+  MoreHorizontal,
+  Pin,
+  Star,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import { formatFullDate } from "@/lib/format-date";
-
-const { Text } = Typography;
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type ItemDetailToolbarProps = {
   updatedAt: Date | string;
@@ -25,6 +27,7 @@ type ItemDetailToolbarProps = {
   onArchive?: () => void;
   onRestore?: () => void;
   onDelete: () => void;
+  onPermanentDelete?: () => void;
 };
 
 export function ItemDetailToolbar({
@@ -37,67 +40,117 @@ export function ItemDetailToolbar({
   onArchive,
   onRestore,
   onDelete,
+  onPermanentDelete,
 }: ItemDetailToolbarProps) {
   const moreItems = [
     status === "ACTIVE" && onArchive
       ? {
           key: "archive",
-          icon: <InboxOutlined />,
+          icon: Archive,
           label: "Archive",
           onClick: onArchive,
+          destructive: false,
         }
       : null,
     status === "ARCHIVED" && onRestore
       ? {
           key: "restore",
-          icon: <UndoOutlined />,
+          icon: Undo2,
           label: "Restore",
           onClick: onRestore,
+          destructive: false,
         }
       : null,
-    {
-      key: "delete",
-      icon: <DeleteOutlined />,
-      label: "Move to trash",
-      danger: true,
-      onClick: onDelete,
-    },
+    status === "TRASHED" && onRestore
+      ? {
+          key: "restore",
+          icon: Undo2,
+          label: "Restore",
+          onClick: onRestore,
+          destructive: false,
+        }
+      : null,
+    status === "TRASHED" && onPermanentDelete
+      ? {
+          key: "permanent-delete",
+          icon: Trash2,
+          label: "Delete permanently",
+          onClick: onPermanentDelete,
+          destructive: true,
+        }
+      : null,
+    status !== "TRASHED"
+      ? {
+          key: "delete",
+          icon: Trash2,
+          label: "Move to Trash",
+          onClick: onDelete,
+          destructive: true,
+        }
+      : null,
   ].filter(Boolean) as {
     key: string;
-    icon: React.ReactNode;
+    icon: React.ComponentType<{ className?: string }>;
     label: string;
-    danger?: boolean;
+    destructive: boolean;
     onClick: () => void;
   }[];
 
   return (
     <div className="item-detail-toolbar">
-      <Text type="secondary" className="item-detail-meta">
+      <span className="item-detail-meta text-sm text-[var(--muted)]">
         Edited {formatFullDate(updatedAt)}
-      </Text>
-      <Space size={4}>
-        <Tooltip title={isPinned ? "Unpin" : "Pin note"}>
-          <Button
-            type="text"
-            size="small"
-            icon={isPinned ? <PushpinFilled /> : <PushpinOutlined />}
-            onClick={onTogglePin}
-            className={isPinned ? "item-toolbar-active" : ""}
-          />
-        </Tooltip>
-        <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-          <Button
-            type="text"
-            size="small"
-            icon={isFavorite ? <StarFilled /> : <StarOutlined />}
-            onClick={onToggleFavorite}
-            className={isFavorite ? "item-toolbar-active" : ""}
-          />
-        </Tooltip>
-        <Dropdown menu={{ items: moreItems }} trigger={["click"]}>
-          <Button type="text" size="small" icon={<MoreOutlined />} />
-        </Dropdown>
-      </Space>
+      </span>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          title={isPinned ? "Unpin" : "Pin to top"}
+          onClick={onTogglePin}
+          aria-label={isPinned ? "Unpin" : "Pin to top"}
+          aria-pressed={isPinned}
+          className={isPinned ? "item-toolbar-active" : ""}
+        >
+          <Pin className={`h-4 w-4 ${isPinned ? "fill-current" : ""}`} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          title={isFavorite ? "Remove from favourites" : "Add to favourites"}
+          onClick={onToggleFavorite}
+          aria-label={isFavorite ? "Remove from favourites" : "Add to favourites"}
+          aria-pressed={isFavorite}
+          className={isFavorite ? "item-toolbar-active" : ""}
+        >
+          <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="More options"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {moreItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <DropdownMenuItem
+                  key={item.key}
+                  className={item.destructive ? "text-[var(--destructive)]" : ""}
+                  onClick={item.onClick}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }

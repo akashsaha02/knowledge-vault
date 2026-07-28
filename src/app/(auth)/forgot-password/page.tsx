@@ -1,53 +1,48 @@
 "use client";
 
-import { App, Button, Card, Form, Input, Typography } from "antd";
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { type FormEvent } from "react";
+import { toast } from "sonner";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 
-const { Title } = Typography;
-
 export default function ForgotPasswordPage() {
-  const { message } = App.useApp();
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+
+    if (!email) return;
+
+    const { error } = await authClient.requestPasswordReset({
+      email,
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast.error(error.message ?? "Request failed");
+      return;
+    }
+    toast.success("Check your email for reset instructions");
+  }
 
   return (
     <div className="auth-page">
-      <div className="auth-page-top">
-        <ThemeToggle />
-      </div>
-      <Link href="/" className="auth-page-brand">
-        Knowledge Vault
-      </Link>
+      <BrandLogo href="/" variant="lockup" className="auth-brand-logo" />
       <Card className="auth-page-form-card w-full max-w-md">
-        <Title level={3} className="!text-[var(--foreground)]">
-          Reset password
-        </Title>
-        <Form
-          layout="vertical"
-          className="mt-4"
-          onFinish={async (values) => {
-            const { error } = await authClient.requestPasswordReset({
-              email: values.email,
-              redirectTo: `${window.location.origin}/reset-password`,
-            });
-            if (error) {
-              message.error(error.message ?? "Request failed");
-              return;
-            }
-            message.success("Check your email for reset instructions");
-          }}
-        >
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[{ required: true, type: "email" }]}
-          >
-            <Input />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" block>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Reset password</h3>
+        <form className="mt-4 space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" required />
+          </div>
+          <Button type="submit" className="w-full">
             Send reset link
           </Button>
-        </Form>
+        </form>
         <p className="mt-4 text-center text-sm text-[var(--muted)]">
           <Link href="/sign-in" className="text-[var(--accent)] hover:underline">
             Back to sign in

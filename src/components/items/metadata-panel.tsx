@@ -1,8 +1,22 @@
 "use client";
 
-import { PlusOutlined } from "@ant-design/icons";
-import { App, Button, Select, Space } from "antd";
+import { ChevronDown, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { listCollectionsAction } from "@/features/collections/collection.actions";
 import { listProjectsAction } from "@/features/projects/project.actions";
 import { createTagAction, listTagsAction } from "@/features/tags/tag.actions";
@@ -20,6 +34,8 @@ type MetadataPanelProps = {
   }) => Promise<void>;
 };
 
+const NONE_VALUE = "__none__";
+
 export function MetadataPanel({
   workspaceId,
   projectId,
@@ -27,7 +43,6 @@ export function MetadataPanel({
   tagIds,
   onUpdate,
 }: MetadataPanelProps) {
-  const { message } = App.useApp();
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [collections, setCollections] = useState<{ id: string; name: string }[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
@@ -39,58 +54,111 @@ export function MetadataPanel({
     void listTagsAction(workspaceId).then(setTags);
   }, [workspaceId]);
 
+  const selectedTagNames = tags
+    .filter((tag) => tagIds.includes(tag.id))
+    .map((tag) => tag.name);
+
+  async function handleCreateTag() {
+    if (!newTag.trim()) return;
+    const tag = await createTagAction(workspaceId, newTag.trim());
+    setTags((prev) => [...prev, tag]);
+    void onUpdate({ tagIds: [...tagIds, tag.id] });
+    completeChecklistTask("tag");
+    setNewTag("");
+    toast.success("Tag created");
+  }
+
   return (
     <aside className="metadata-panel" aria-label="Item metadata">
       <p className="item-section-label">Organization</p>
-      <Space orientation="vertical" className="w-full" size="middle">
+      <div className="flex w-full flex-col gap-4">
         <div>
           <label className="metadata-label" htmlFor="meta-project">
             Project
           </label>
           <Select
-            id="meta-project"
-            allowClear
-            placeholder="No project"
-            className="w-full"
-            value={projectId ?? undefined}
-            onChange={(value) => void onUpdate({ projectId: value ?? null })}
-            options={projects.map((p) => ({ value: p.id, label: p.name }))}
-          />
+            value={projectId ?? NONE_VALUE}
+            onValueChange={(value) =>
+              void onUpdate({ projectId: value === NONE_VALUE ? null : value })
+            }
+          >
+            <SelectTrigger id="meta-project" className="w-full">
+              <SelectValue placeholder="No project" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_VALUE}>No project</SelectItem>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="metadata-label" htmlFor="meta-collection">
             Collection
           </label>
           <Select
-            id="meta-collection"
-            allowClear
-            placeholder="No collection"
-            className="w-full"
-            value={collectionId ?? undefined}
-            onChange={(value) => void onUpdate({ collectionId: value ?? null })}
-            options={collections.map((c) => ({ value: c.id, label: c.name }))}
-          />
+            value={collectionId ?? NONE_VALUE}
+            onValueChange={(value) =>
+              void onUpdate({ collectionId: value === NONE_VALUE ? null : value })
+            }
+          >
+            <SelectTrigger id="meta-collection" className="w-full">
+              <SelectValue placeholder="No collection" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_VALUE}>No collection</SelectItem>
+              {collections.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="metadata-label" htmlFor="meta-tags">
             Tags
           </label>
-          <Select
-            id="meta-tags"
-            mode="multiple"
-            allowClear
-            placeholder="Add tags"
-            className="w-full"
-            value={tagIds}
-            onChange={(value) => {
-              void onUpdate({ tagIds: value });
-              if (value.length > 0) completeChecklistTask("tag");
-            }}
-            options={tags.map((t) => ({ value: t.id, label: t.name }))}
-          />
-          <Space.Compact className="w-full mt-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                id="meta-tags"
+                variant="outline"
+                className="w-full justify-between font-normal"
+              >
+                <span className="truncate">
+                  {selectedTagNames.length > 0
+                    ? selectedTagNames.join(", ")
+                    : "Add tags"}
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+              {tags.map((tag) => (
+                <DropdownMenuCheckboxItem
+                  key={tag.id}
+                  checked={tagIds.includes(tag.id)}
+                  onCheckedChange={(checked) => {
+                    const nextTagIds = checked
+                      ? [...tagIds, tag.id]
+                      : tagIds.filter((id) => id !== tag.id);
+                    void onUpdate({ tagIds: nextTagIds });
+                    if (nextTagIds.length > 0) completeChecklistTask("tag");
+                  }}
+                >
+                  {tag.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="mt-2 flex w-full">
             <input
-              className="metadata-tag-input"
+              id="meta-tag-input"
+              className="metadata-tag-input flex-1"
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               placeholder="New tag name"
@@ -98,33 +166,19 @@ export function MetadataPanel({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && newTag.trim()) {
                   e.preventDefault();
-                  void createTagAction(workspaceId, newTag.trim()).then((tag) => {
-                    setTags((prev) => [...prev, tag]);
-                    void onUpdate({ tagIds: [...tagIds, tag.id] });
-                    completeChecklistTask("tag");
-                    setNewTag("");
-                    message.success("Tag created");
-                  });
+                  void handleCreateTag();
                 }
               }}
             />
             <Button
-              icon={<PlusOutlined />}
               aria-label="Create tag"
-              onClick={() => {
-                if (!newTag.trim()) return;
-                void createTagAction(workspaceId, newTag.trim()).then((tag) => {
-                  setTags((prev) => [...prev, tag]);
-                  void onUpdate({ tagIds: [...tagIds, tag.id] });
-                  completeChecklistTask("tag");
-                  setNewTag("");
-                  message.success("Tag created");
-                });
-              }}
-            />
-          </Space.Compact>
+              onClick={() => void handleCreateTag()}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </Space>
+      </div>
     </aside>
   );
 }

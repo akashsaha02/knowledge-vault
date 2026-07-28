@@ -1,7 +1,7 @@
 "use client";
 
-import { Input } from "antd";
 import { useEffect, useRef } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { useAutosave } from "@/hooks/use-autosave";
 
 type CodeEditorProps = {
@@ -22,9 +22,15 @@ export function CodeEditor({
   label,
 }: CodeEditorProps) {
   const valueRef = useRef(value);
-  valueRef.current = value;
   const onSaveRef = useRef(onSave);
-  onSaveRef.current = onSave;
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   const { schedule, flush } = useAutosave(async () => {
     await onSaveRef.current(valueRef.current);
@@ -33,7 +39,7 @@ export function CodeEditor({
   return (
     <div className="code-editor">
       {label ? <label className="code-editor-label">{label}</label> : null}
-      <Input.TextArea
+      <Textarea
         value={value}
         onChange={(e) => {
           onChange(e.target.value);

@@ -34,6 +34,7 @@ export default async function DashboardPage() {
         updatedAt: item.updatedAt,
         isPinned: item.isPinned,
         isFavorite: item.isFavorite,
+        metadata: item.metadata,
       }))}
       stats={{
         hasNote: notes.length > 0,

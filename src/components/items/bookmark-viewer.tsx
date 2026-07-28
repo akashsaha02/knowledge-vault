@@ -1,10 +1,9 @@
 "use client";
 
-import { ExportOutlined } from "@ant-design/icons";
-import { Button, Card, Typography } from "antd";
+import { ExternalLink } from "lucide-react";
 import Image from "next/image";
-
-const { Title, Paragraph, Text } = Typography;
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 type BookmarkViewerProps = {
   url: string;
@@ -36,29 +35,34 @@ export function BookmarkViewer({
           />
         </div>
       )}
-      <div className="flex items-start gap-3">
-        {faviconUrl && (
-          <Image src={faviconUrl} alt="" width={20} height={20} unoptimized />
-        )}
-        <div className="flex-1">
-          <Title level={4} className="!mb-1">
-            {title}
-          </Title>
-          {siteName && <Text type="secondary">{siteName}</Text>}
-          {description && (
-            <Paragraph className="!mt-2 !mb-0">{description}</Paragraph>
+      <CardContent className={previewImageUrl ? "pt-0" : "pt-6"}>
+        <div className="flex items-start gap-3">
+          {faviconUrl && (
+            <Image src={faviconUrl} alt="" width={20} height={20} unoptimized />
           )}
-          <Button
-            type="link"
-            icon={<ExportOutlined />}
-            href={url}
-            target="_blank"
-            className="!px-0 mt-2"
-          >
-            {url}
-          </Button>
+          <div className="flex-1">
+            <h4 className="mb-1 text-lg font-semibold">
+              {title}
+            </h4>
+            {siteName && (
+              <p className="text-sm text-[var(--muted)]">{siteName}</p>
+            )}
+            {description && (
+              <p className="mt-2 mb-0">{description}</p>
+            )}
+            <Button
+              variant="link"
+              className="!px-0 mt-2 h-auto"
+              asChild
+            >
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                {url}
+              </a>
+            </Button>
+          </div>
         </div>
-      </div>
+      </CardContent>
     </Card>
   );
 }

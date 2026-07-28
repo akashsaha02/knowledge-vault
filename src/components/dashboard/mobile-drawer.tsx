@@ -1,9 +1,14 @@
 "use client";
 
-import { Drawer } from "antd";
-import Link from "next/link";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { CreateMenu } from "@/components/dashboard/create-menu";
 import { DashboardNavMenu } from "@/components/dashboard/nav-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useUiStore } from "@/stores/ui-store";
 
 export function MobileDrawer() {
@@ -11,33 +16,28 @@ export function MobileDrawer() {
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
 
   return (
-    <Drawer
-      title={
-        <Link
-          href="/dashboard"
-          className="sider-brand sider-brand-drawer"
-          onClick={() => setMobileNavOpen(false)}
-        >
-          <span className="sider-brand-icon">KV</span>
-          <span className="sider-brand-text">Knowledge Vault</span>
-        </Link>
-      }
-      placement="left"
-      open={open}
-      onClose={() => setMobileNavOpen(false)}
-      className="mobile-nav-drawer"
-      size={280}
-    >
-      <div className="mobile-drawer-content">
-        <div className="sider-quick-actions">
-          <CreateMenu block onNavigate={() => setMobileNavOpen(false)} />
+    <Sheet open={open} onOpenChange={setMobileNavOpen}>
+      <SheetContent
+        side="left"
+        className="mobile-nav-drawer w-[280px] max-w-[280px] p-4"
+      >
+        <SheetHeader className="p-0 text-left">
+          <SheetTitle className="p-0">
+            <BrandLogo
+              href="/dashboard"
+              variant="lockup"
+              className="sider-brand-drawer-logo"
+              onNavigate={() => setMobileNavOpen(false)}
+            />
+          </SheetTitle>
+        </SheetHeader>
+        <div className="mobile-drawer-content">
+          <div className="sider-quick-actions">
+            <CreateMenu block onNavigate={() => setMobileNavOpen(false)} />
+          </div>
+          <DashboardNavMenu onNavigate={() => setMobileNavOpen(false)} />
         </div>
-        <DashboardNavMenu
-          onNavigate={() => setMobileNavOpen(false)}
-          defaultLibraryOpen
-          defaultOrganizeOpen
-        />
-      </div>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 }

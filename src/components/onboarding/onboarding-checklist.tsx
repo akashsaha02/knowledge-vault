@@ -1,9 +1,9 @@
 "use client";
 
-import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
-import { Button, Card } from "antd";
+import { CheckCircle2, Rocket, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   CHECKLIST_TASKS,
   dismissChecklist,
@@ -61,30 +61,43 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
 
   if (allDone) return null;
 
+  const completedCount = CHECKLIST_TASKS.filter((t) =>
+    state.completed.includes(t.id),
+  ).length;
+
   return (
-    <Card
-      className="onboarding-checklist !border-[var(--border)] !mb-6"
-      title="Get started"
-      extra={
+    <section className="onboarding-checklist" aria-label="Getting started checklist">
+      <div className="onboarding-checklist-header">
+        <h2 className="onboarding-checklist-title">
+          <Rocket className="onboarding-checklist-title-icon" aria-hidden="true" />
+          Getting started ({completedCount}/{CHECKLIST_TASKS.length} done)
+        </h2>
         <Button
-          type="text"
-          size="small"
-          icon={<CloseOutlined />}
+          variant="ghost"
+          size="sm"
           aria-label="Dismiss checklist"
           onClick={() => {
             dismissChecklist();
             setState((s) => ({ ...s, dismissed: true }));
           }}
-        />
-      }
-    >
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
       <ul className="onboarding-checklist-list">
         {CHECKLIST_TASKS.map((task) => {
           const done = state.completed.includes(task.id);
           return (
-            <li key={task.id} className={done ? "onboarding-checklist-done" : ""}>
-              <span className="onboarding-checklist-icon">
-                {done ? <CheckOutlined /> : "○"}
+            <li
+              key={task.id}
+              className={`onboarding-checklist-item${done ? " onboarding-checklist-item--done" : ""}`}
+            >
+              <span className="onboarding-checklist-icon" aria-hidden="true">
+                {done ? (
+                  <CheckCircle2 className="h-4 w-4 text-[var(--brand)]" />
+                ) : (
+                  <span className="onboarding-checklist-pending" />
+                )}
               </span>
               {done ? (
                 <span>{task.label}</span>
@@ -95,6 +108,6 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
           );
         })}
       </ul>
-    </Card>
+    </section>
   );
 }

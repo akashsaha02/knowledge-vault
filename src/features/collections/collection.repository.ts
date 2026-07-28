@@ -1,6 +1,13 @@
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 
+export async function findCollectionById(id: string) {
+  return db.collection.findUnique({
+    where: { id },
+    include: { _count: { select: { items: true } } },
+  });
+}
+
 export async function findCollections(workspaceId: string) {
   return db.collection.findMany({
     where: { workspaceId },

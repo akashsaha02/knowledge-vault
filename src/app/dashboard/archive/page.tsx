@@ -4,7 +4,7 @@ export default function ArchivePage() {
   return (
     <DashboardItemPage
       title="Archive"
-      emptyDescription="No archived items"
+      emptyDescription="Nothing has been archived yet"
       status="ARCHIVED"
     />
   );

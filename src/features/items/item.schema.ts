@@ -16,6 +16,7 @@ export const createItemSchema = z.object({
   collectionId: z.string().optional(),
   parentId: z.string().optional(),
   visibility: visibilitySchema.optional(),
+  status: itemStatusSchema.optional(),
   tagIds: z.array(z.string()).optional(),
 });
 

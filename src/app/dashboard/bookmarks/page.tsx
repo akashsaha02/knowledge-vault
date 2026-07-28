@@ -4,8 +4,8 @@ export default function BookmarksPage() {
   return (
     <DashboardItemPage
       type="BOOKMARK"
-      title="Bookmarks"
-      emptyDescription="No bookmarks yet"
+      title="Saved Links"
+      emptyDescription="Save your first link — paste a URL and give it a name"
     />
   );
 }

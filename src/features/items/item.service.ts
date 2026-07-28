@@ -6,11 +6,14 @@ import {
   findItemById,
   findItems,
   findRevisions,
+  hardDeleteItem,
   slugExists,
+  restoreDeletedItem,
   softDeleteItem,
   updateItem,
 } from "@/features/items/item.repository";
 import type { CreateItemInput, UpdateItemInput } from "@/features/items/item.schema";
+import { hasPermission } from "@/features/workspaces/workspace.permissions";
 import {
   canEditItem,
   requireWorkspaceMember,
@@ -35,17 +38,30 @@ export async function listAccessibleItems(
   filters: ItemListFilters,
 ) {
   await requireWorkspaceMember(userId, filters.workspaceId);
-  return findItems(filters);
+  return findItems({ ...filters, userId });
 }
 
 export async function getAccessibleItem(
   userId: string,
   workspaceId: string,
   itemId: string,
+  options?: { includeTrashed?: boolean },
 ) {
   await requireWorkspaceMember(userId, workspaceId);
   const item = await findItemById(itemId);
-  if (!item || item.workspaceId !== workspaceId || item.deletedAt) {
+  if (!item || item.workspaceId !== workspaceId) {
+    throw new Error("Item not found");
+  }
+  if (
+    item.visibility === "PRIVATE" &&
+    item.createdById !== userId
+  ) {
+    const member = await requireWorkspaceMember(userId, workspaceId);
+    if (!hasPermission(member.role, "editAll")) {
+      throw new Error("Item not found");
+    }
+  }
+  if (item.deletedAt && !options?.includeTrashed) {
     throw new Error("Item not found");
   }
   return item;
@@ -72,6 +88,7 @@ export async function createItemForUser(
     content: (input.content as Prisma.InputJsonValue) ?? undefined,
     metadata: (input.metadata as Prisma.InputJsonValue) ?? undefined,
     visibility: input.visibility,
+    status: input.status,
     workspace: { connect: { id: input.workspaceId } },
     createdBy: { connect: { id: userId } },
     ...(input.projectId && { project: { connect: { id: input.projectId } } }),
@@ -102,13 +119,29 @@ export async function createItemForUser(
 export async function updateItemForUser(
   userId: string,
   input: UpdateItemInput,
+  options?: { includeTrashed?: boolean },
 ) {
   const member = await requireWorkspaceMember(userId, input.workspaceId);
-  const existing = await getAccessibleItem(userId, input.workspaceId, input.id);
+  const existing = await getAccessibleItem(
+    userId,
+    input.workspaceId,
+    input.id,
+    options,
+  );
 
   if (!canEditItem(member.role, userId, existing.createdById)) {
     throw new Error("Insufficient permissions");
   }
+
+  const resolvedStatus =
+    input.status ??
+    (existing.status === "DRAFT" &&
+    (input.title !== undefined ||
+      input.content !== undefined ||
+      input.plainText !== undefined ||
+      input.metadata !== undefined)
+      ? ("ACTIVE" as const)
+      : undefined);
 
   await validateItemReferences(input.workspaceId, {
     projectId: input.projectId,
@@ -126,7 +159,7 @@ export async function updateItemForUser(
     ...(input.metadata !== undefined && {
       metadata: input.metadata as Prisma.InputJsonValue,
     }),
-    ...(input.status !== undefined && { status: input.status }),
+    ...(resolvedStatus !== undefined && { status: resolvedStatus }),
     ...(input.visibility !== undefined && { visibility: input.visibility }),
     ...(input.isPinned !== undefined && { isPinned: input.isPinned }),
     ...(input.isFavorite !== undefined && { isFavorite: input.isFavorite }),
@@ -189,6 +222,19 @@ export async function restoreItem(
   itemId: string,
   status: ItemStatus = "ACTIVE",
 ) {
+  const member = await requireWorkspaceMember(userId, workspaceId);
+  const existing = await getAccessibleItem(userId, workspaceId, itemId, {
+    includeTrashed: true,
+  });
+
+  if (!canEditItem(member.role, userId, existing.createdById)) {
+    throw new Error("Insufficient permissions");
+  }
+
+  if (existing.deletedAt) {
+    return restoreDeletedItem(itemId, status);
+  }
+
   return updateItemForUser(userId, { id: itemId, workspaceId, status });
 }
 
@@ -199,6 +245,27 @@ export async function trashItem(userId: string, workspaceId: string, itemId: str
     throw new Error("Insufficient permissions");
   }
   return softDeleteItem(itemId);
+}
+
+export async function permanentlyDeleteItem(
+  userId: string,
+  workspaceId: string,
+  itemId: string,
+) {
+  const member = await requireWorkspaceMember(userId, workspaceId);
+  const existing = await getAccessibleItem(userId, workspaceId, itemId, {
+    includeTrashed: true,
+  });
+
+  if (!canEditItem(member.role, userId, existing.createdById)) {
+    throw new Error("Insufficient permissions");
+  }
+
+  if (existing.status !== "TRASHED" || !existing.deletedAt) {
+    throw new Error("Item must be in trash before permanent deletion");
+  }
+
+  return hardDeleteItem(itemId);
 }
 
 export async function getItemRevisions(

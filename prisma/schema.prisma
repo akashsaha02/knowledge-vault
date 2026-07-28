@@ -25,7 +25,6 @@ model User {
   favorites         Favorite[]
   revisions         Revision[]
   attachments       Attachment[]      @relation("AttachmentUploader")
-  activities        Activity[]
   activeWorkspaceId String?
 
   @@unique([email])
@@ -105,8 +104,6 @@ model Workspace {
   tags        Tag[]
   attachments Attachment[]
   shareLinks  ShareLink[]
-  activities  Activity[]
-  embeddings  Embedding[]
 
   @@map("workspace")
 }
@@ -136,8 +133,6 @@ enum ItemType {
   BOOKMARK
   PROMPT
   FILE
-  TASK
-  CAPSULE
 }
 
 enum ItemStatus {
@@ -226,9 +221,6 @@ model Item {
   attachments Attachment[]
   revisions   Revision[]
   favorites   Favorite[]
-  linksFrom   ItemLink[] @relation("LinkSource")
-  linksTo     ItemLink[] @relation("LinkTarget")
-  embeddings  Embedding[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -264,20 +256,6 @@ model ItemTag {
 
   @@id([itemId, tagId])
   @@map("item_tag")
-}
-
-model ItemLink {
-  id         String   @id @default(cuid())
-  sourceId   String
-  targetId   String
-  linkType   String   @default("related")
-  createdAt  DateTime @default(now())
-
-  source Item @relation("LinkSource", fields: [sourceId], references: [id], onDelete: Cascade)
-  target Item @relation("LinkTarget", fields: [targetId], references: [id], onDelete: Cascade)
-
-  @@unique([sourceId, targetId])
-  @@map("item_link")
 }
 
 model Attachment {
@@ -348,56 +326,4 @@ model ShareLink {
 
   @@index([workspaceId])
   @@map("share_link")
-}
-
-model Activity {
-  id          String   @id @default(cuid())
-  workspaceId String
-  userId      String
-  action      String
-  entityType  String
-  entityId    String
-  metadata    Json?
-  createdAt   DateTime @default(now())
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id])
-
-  @@index([workspaceId, createdAt])
-  @@map("activity")
-}
-
-model Embedding {
-  id          String   @id @default(cuid())
-  workspaceId String
-  itemId      String
-  chunkIndex  Int
-  content     String
-  embedding   Unsupported("vector(1536)")?
-  model       String
-  contentHash String
-  createdAt   DateTime @default(now())
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-
-  @@index([itemId])
-  @@index([workspaceId])
-  @@map("embedding")
-}
-
-model OfflineDraft {
-  id          String   @id @default(cuid())
-  userId      String
-  workspaceId String
-  itemId      String?
-  draftKey    String
-  content     Json?
-  plainText   String   @default("")
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
-
-  @@unique([userId, draftKey])
-  @@index([userId, workspaceId])
-  @@map("offline_draft")
 }

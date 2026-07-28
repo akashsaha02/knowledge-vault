@@ -1,11 +1,22 @@
 import "server-only";
 
 import { randomBytes } from "crypto";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { getAuthSecret } from "@/lib/auth-secret";
 import {
   AuthorizationError,
   requireWorkspacePermission,
 } from "@/features/workspaces/workspace.service";
+import {
+  createShareAuthCookieValue,
+  shareAuthCookieName,
+  verifyShareAuthCookieValue,
+} from "@/features/sharing/share-cookie";
+import {
+  hashSharePassword,
+  verifySharePassword,
+} from "@/features/sharing/share-password";
 
 export async function createShareLink(
   userId: string,
@@ -19,6 +30,21 @@ export async function createShareLink(
   },
 ) {
   await requireWorkspacePermission(userId, workspaceId, "editAll");
+
+  if (options.itemId) {
+    const item = await db.item.findFirst({
+      where: {
+        id: options.itemId,
+        workspaceId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!item) {
+      throw new AuthorizationError("Item not found in this workspace");
+    }
+  }
+
   const token = randomBytes(32).toString("hex");
 
   return db.shareLink.create({
@@ -27,7 +53,7 @@ export async function createShareLink(
       itemId: options.itemId,
       token,
       expiresAt: options.expiresAt,
-      password: options.password,
+      password: options.password ? hashSharePassword(options.password) : null,
       allowCopy: options.allowCopy ?? false,
       allowDownload: options.allowDownload ?? false,
     },
@@ -62,20 +88,58 @@ export async function getShareLinkByToken(token: string) {
   return link;
 }
 
-export async function getPublicSharedContent(token: string) {
+async function hasSharePasswordAccess(token: string, linkId: string) {
   const link = await getShareLinkByToken(token);
-  if (!link) return null;
+  if (!link) return false;
+  if (!link.password) return true;
 
-  await db.shareLink.update({
-    where: { id: link.id },
-    data: { viewCount: { increment: 1 } },
-  });
+  const cookieStore = await cookies();
+  const cookie = cookieStore.get(shareAuthCookieName(token));
+  if (!cookie?.value) return false;
 
-  if (!link.itemId) {
-    return { link, item: null };
+  return verifyShareAuthCookieValue(
+    cookie.value,
+    token,
+    linkId,
+    getAuthSecret(),
+  );
+}
+
+export async function unlockShareLink(token: string, password: string) {
+  const link = await getShareLinkByToken(token);
+  if (!link) return { ok: false as const, error: "Link not found" };
+  if (!link.password) return { ok: true as const };
+
+  if (!verifySharePassword(password, link.password)) {
+    return { ok: false as const, error: "Incorrect password" };
   }
 
-  const item = await db.item.findFirst({
+  const cookieStore = await cookies();
+  cookieStore.set(shareAuthCookieName(token), createShareAuthCookieValue(token, link.id, getAuthSecret()), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: `/share/${token}`,
+    maxAge: 60 * 60 * 24,
+  });
+
+  return { ok: true as const };
+}
+
+export type PublicSharedContent =
+  | { requiresPassword: true }
+  | {
+      requiresPassword: false;
+      link: NonNullable<Awaited<ReturnType<typeof getShareLinkByToken>>>;
+      item: Awaited<ReturnType<typeof loadSharedItem>>;
+    };
+
+async function loadSharedItem(
+  link: NonNullable<Awaited<ReturnType<typeof getShareLinkByToken>>>,
+) {
+  if (!link.itemId) return null;
+
+  return db.item.findFirst({
     where: {
       id: link.itemId,
       workspaceId: link.workspaceId,
@@ -85,6 +149,24 @@ export async function getPublicSharedContent(token: string) {
       tags: { include: { tag: true } },
     },
   });
+}
 
-  return { link, item };
+export async function getPublicSharedContent(
+  token: string,
+): Promise<PublicSharedContent | null> {
+  const link = await getShareLinkByToken(token);
+  if (!link) return null;
+
+  if (link.password && !(await hasSharePasswordAccess(token, link.id))) {
+    return { requiresPassword: true };
+  }
+
+  await db.shareLink.update({
+    where: { id: link.id },
+    data: { viewCount: { increment: 1 } },
+  });
+
+  const item = await loadSharedItem(link);
+
+  return { requiresPassword: false, link, item };
 }

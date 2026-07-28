@@ -1,15 +1,10 @@
-import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import Link from "next/link";
 
 export default function VerifyEmailPage() {
   return (
     <div className="auth-page">
-      <div className="auth-page-top">
-        <ThemeToggle />
-      </div>
-      <Link href="/" className="auth-page-brand">
-        Knowledge Vault
-      </Link>
+      <BrandLogo href="/" variant="lockup" className="auth-brand-logo" />
       <div className="auth-page-card">
         <h1 className="auth-page-title">Verify your email</h1>
         <p className="auth-page-description">

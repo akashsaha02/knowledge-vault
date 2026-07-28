@@ -1,67 +1,112 @@
 "use client";
 
-import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
-import { App, Button, Card, Divider, Form, Input, Typography } from "antd";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
-
-const { Title, Text } = Typography;
+import { BRAND_NAME } from "@/lib/brand";
 
 export function SignInForm() {
   const router = useRouter();
-  const { message } = App.useApp();
+  const [showPassword, setShowPassword] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+
+    if (!email || !password) return;
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    const { error } = await authClient.signIn.email({
+      email,
+      password,
+    });
+    if (error) {
+      toast.error(error.message ?? "Sign in failed");
+      return;
+    }
+    toast.success("Signed in");
+    router.push("/dashboard");
+    router.refresh();
+  }
 
   return (
-    <Card className="w-full max-w-md shadow-sm">
-      <Title level={2} className="!font-[family-name:var(--font-display)] !mb-2">
-        Welcome back
-      </Title>
-      <Text type="secondary">Sign in to your Knowledge Vault</Text>
+    <Card className="auth-page-form-card w-full max-w-md">
+      <h2 className="text-2xl font-semibold mb-2">Welcome back</h2>
+      <p className="text-sm text-[var(--muted)]">Sign in to {BRAND_NAME}</p>
 
-      <Form
-        layout="vertical"
-        className="mt-6"
-        onFinish={async (values) => {
-          const { error } = await authClient.signIn.email({
-            email: values.email,
-            password: values.password,
-          });
-          if (error) {
-            message.error(error.message ?? "Sign in failed");
-            return;
-          }
-          message.success("Signed in");
-          router.push("/dashboard");
-          router.refresh();
-        }}
-      >
-        <Form.Item
-          name="email"
-          label="Email"
-          rules={[{ required: true, type: "email" }]}
-        >
-          <Input prefix={<MailOutlined />} placeholder="you@example.com" />
-        </Form.Item>
-        <Form.Item
-          name="password"
-          label="Password"
-          rules={[{ required: true, min: 8 }]}
-        >
-          <Input.Password prefix={<LockOutlined />} />
-        </Form.Item>
-        <div className="flex justify-end mb-4">
+      <form className="mt-6 space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <div className="relative">
+            <Mail
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]"
+              aria-hidden="true"
+            />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Lock
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]"
+              aria-hidden="true"
+            />
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={8}
+              className="pl-9 pr-10"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)]"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((s) => !s)}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex justify-end">
           <Link href="/forgot-password">Forgot password?</Link>
         </div>
-        <Button type="primary" htmlType="submit" block>
+        <Button type="submit" className="w-full">
           Sign in
         </Button>
-      </Form>
+      </form>
 
-      <Divider>or</Divider>
+      <div className="flex items-center gap-4 my-4">
+        <Separator className="flex-1" />
+        <span className="text-sm text-[var(--muted)]">or</span>
+        <Separator className="flex-1" />
+      </div>
 
       <Button
-        block
+        variant="secondary"
+        className="w-full"
         onClick={async () => {
           await authClient.signIn.social({ provider: "google" });
         }}

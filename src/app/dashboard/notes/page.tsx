@@ -1,14 +1,14 @@
 import { Suspense } from "react";
-import { Spin } from "antd";
+import { InlineLoader } from "@/components/ui/content-loader";
 import { DashboardItemPage } from "@/components/dashboard/dashboard-item-page";
 
 export default function NotesPage() {
   return (
-    <Suspense fallback={<Spin className="m-8" />}>
+    <Suspense fallback={<InlineLoader />}>
       <DashboardItemPage
         type="NOTE"
         title="Notes"
-        emptyDescription="No notes yet"
+        emptyDescription="Write something you want to remember"
       />
     </Suspense>
   );

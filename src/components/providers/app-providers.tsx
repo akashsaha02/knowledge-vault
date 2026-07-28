@@ -1,41 +1,13 @@
 "use client";
 
-import { App, ConfigProvider } from "antd";
-import { getAppTheme } from "@/lib/theme";
-import { ThemeProvider, useThemeMode } from "@/components/providers/theme-context";
+import { ThemeProvider } from "@/components/providers/theme-context";
+import { Toaster } from "@/components/ui/sonner";
 
-function ThemedApp({
-  children,
-  fontFamily,
-  fontMono,
-}: {
-  children: React.ReactNode;
-  fontFamily: string;
-  fontMono: string;
-}) {
-  const { mode } = useThemeMode();
-
-  return (
-    <ConfigProvider theme={getAppTheme(mode, fontFamily, fontMono)}>
-      <App>{children}</App>
-    </ConfigProvider>
-  );
-}
-
-export function AppProviders({
-  children,
-  fontFamily,
-  fontMono,
-}: {
-  children: React.ReactNode;
-  fontFamily: string;
-  fontMono: string;
-}) {
+export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <ThemedApp fontFamily={fontFamily} fontMono={fontMono}>
-        {children}
-      </ThemedApp>
+      {children}
+      <Toaster position="top-center" richColors closeButton />
     </ThemeProvider>
   );
 }

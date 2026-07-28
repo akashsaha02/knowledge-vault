@@ -6,15 +6,19 @@ type SaveStatus = "idle" | "editing" | "saving" | "saved" | "offline" | "error";
 interface UiState {
   sidebarCollapsed: boolean;
   mobileNavOpen: boolean;
+  createSheetOpen: boolean;
   activeWorkspaceId: string | null;
   selectedItemId: string | null;
+  selectedItemTitle: string | null;
   saveStatus: SaveStatus;
   commandPaletteOpen: boolean;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setMobileNavOpen: (open: boolean) => void;
+  setCreateSheetOpen: (open: boolean) => void;
   setActiveWorkspaceId: (id: string | null) => void;
   setSelectedItemId: (id: string | null) => void;
+  setSelectedItemTitle: (title: string | null) => void;
   setSaveStatus: (status: SaveStatus) => void;
   setCommandPaletteOpen: (open: boolean) => void;
   quickCreateType: ItemType | null;
@@ -24,8 +28,10 @@ interface UiState {
 export const useUiStore = create<UiState>((set) => ({
   sidebarCollapsed: false,
   mobileNavOpen: false,
+  createSheetOpen: false,
   activeWorkspaceId: null,
   selectedItemId: null,
+  selectedItemTitle: null,
   saveStatus: "idle",
   commandPaletteOpen: false,
   quickCreateType: null,
@@ -33,8 +39,10 @@ export const useUiStore = create<UiState>((set) => ({
     set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   setMobileNavOpen: (open) => set({ mobileNavOpen: open }),
+  setCreateSheetOpen: (open) => set({ createSheetOpen: open }),
   setActiveWorkspaceId: (id) => set({ activeWorkspaceId: id }),
   setSelectedItemId: (id) => set({ selectedItemId: id }),
+  setSelectedItemTitle: (title) => set({ selectedItemTitle: title }),
   setSaveStatus: (status) => set({ saveStatus: status }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setQuickCreateType: (type) => set({ quickCreateType: type }),

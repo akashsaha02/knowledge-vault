@@ -7,6 +7,7 @@ import {
   getAccessibleItem,
   getItemRevisions,
   listAccessibleItems,
+  permanentlyDeleteItem,
   restoreItem,
   trashItem,
   updateItemForUser,
@@ -23,7 +24,7 @@ import type { ItemListFilters } from "@/features/items/item.types";
 const TYPE_PATHS: Partial<Record<ItemType, string>> = {
   NOTE: "/dashboard/notes",
   SNIPPET: "/dashboard/snippets",
-  COMMAND: "/dashboard/commands",
+  COMMAND: "/dashboard/snippets",
   BOOKMARK: "/dashboard/bookmarks",
   PROMPT: "/dashboard/prompts",
   FILE: "/dashboard/files",
@@ -31,6 +32,8 @@ const TYPE_PATHS: Partial<Record<ItemType, string>> = {
 
 function revalidateItemPaths(type?: ItemType) {
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/trash");
+  revalidatePath("/dashboard/archive");
   if (type && TYPE_PATHS[type]) {
     revalidatePath(TYPE_PATHS[type]!);
   }
@@ -82,6 +85,19 @@ export async function trashItemAction(workspaceId: string, itemId: string) {
   const item = await trashItem(user.id, workspaceId, itemId);
   revalidateItemPaths(existing.type);
   return item;
+}
+
+export async function permanentlyDeleteItemAction(
+  workspaceId: string,
+  itemId: string,
+) {
+  const user = await requireUser();
+  const existing = await getAccessibleItem(user.id, workspaceId, itemId, {
+    includeTrashed: true,
+  });
+  await permanentlyDeleteItem(user.id, workspaceId, itemId);
+  revalidateItemPaths(existing.type);
+  return { deleted: true };
 }
 
 export async function getRevisionsAction(workspaceId: string, itemId: string) {

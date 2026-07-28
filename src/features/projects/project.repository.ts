@@ -1,6 +1,13 @@
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 
+export async function findProjectById(id: string) {
+  return db.project.findUnique({
+    where: { id },
+    include: { _count: { select: { items: true } } },
+  });
+}
+
 export async function findProjects(workspaceId: string) {
   return db.project.findMany({
     where: { workspaceId },

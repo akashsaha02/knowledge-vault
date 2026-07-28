@@ -1,24 +1,29 @@
 "use client";
 
 import {
-  LogoutOutlined,
-  MenuFoldOutlined,
-  MenuOutlined,
-  MenuUnfoldOutlined,
-  SearchOutlined,
-  SettingOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
-import { Avatar, Button, Dropdown, Layout, Space, Typography } from "antd";
+  ChevronDown,
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Settings,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SearchShortcutKbd } from "@/components/dashboard/search-shortcut-kbd";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { WorkspaceSwitcher } from "@/components/dashboard/workspace-switcher";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
 import { useUiStore } from "@/stores/ui-store";
-
-const { Header } = Layout;
-const { Text } = Typography;
 
 export function DashboardHeader({
   userName,
@@ -34,90 +39,88 @@ export function DashboardHeader({
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const setCommandPaletteOpen = useUiStore((s) => s.setCommandPaletteOpen);
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
-  const saveStatus = useUiStore((s) => s.saveStatus);
+
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
-    <Header className="dashboard-header">
+    <header className="dashboard-header">
       <div className="dashboard-header-inner">
-        <Space size="middle" className="dashboard-header-left">
+        <div className="dashboard-header-left">
           <Button
-            type="text"
-            className="dashboard-header-icon-btn dashboard-header-menu-mobile"
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
             aria-label="Open navigation menu"
-            icon={<MenuOutlined />}
             onClick={() => setMobileNavOpen(true)}
-          />
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           <Button
-            type="text"
-            className="dashboard-header-icon-btn dashboard-header-menu-desktop"
+            variant="ghost"
+            size="icon"
+            className="hidden md:inline-flex"
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            icon={sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={toggleSidebar}
-          />
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="h-5 w-5" />
+            ) : (
+              <PanelLeftClose className="h-5 w-5" />
+            )}
+          </Button>
+          <Breadcrumbs />
+        </div>
+
+        <div className="dashboard-header-right">
           <WorkspaceSwitcher
             currentWorkspaceId={workspaceId}
             currentWorkspaceName={workspaceName ?? "Workspace"}
           />
-          <Breadcrumbs />
-        </Space>
-
-        <Space size="middle" className="dashboard-header-right">
-          {saveStatus !== "idle" ? (
-            <Text className="dashboard-save-status" aria-live="polite">
-              {saveStatus}
-            </Text>
-          ) : null}
-          <Button
-            type="default"
-            size="small"
-            icon={<SearchOutlined />}
-            onClick={() => setCommandPaletteOpen(true)}
+          <button
+            type="button"
             className="dashboard-search-btn"
-            aria-label="Open command palette (Ctrl+K)"
+            onClick={() => setCommandPaletteOpen(true)}
+            aria-label="Search"
           >
-            <span className="dashboard-search-btn-label">Search</span>
-            <kbd className="dashboard-kbd">Ctrl+K</kbd>
-          </Button>
-          <ThemeToggle />
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: "settings",
-                  icon: <SettingOutlined />,
-                  label: "Settings",
-                  onClick: () => router.push("/dashboard/settings"),
-                },
-                { type: "divider" },
-                {
-                  key: "logout",
-                  icon: <LogoutOutlined />,
-                  label: "Log out",
-                  onClick: async () => {
-                    await authClient.signOut();
-                    router.push("/sign-in");
-                    router.refresh();
-                  },
-                },
-              ],
-            }}
-            trigger={["click"]}
-          >
-            <button
-              type="button"
-              className="dashboard-user-btn"
-              aria-label="Account menu"
-            >
-              <Avatar
-                size="small"
-                icon={<UserOutlined />}
-                className="dashboard-avatar"
-              />
-              <Text className="dashboard-user-name">{userName}</Text>
-            </button>
-          </Dropdown>
-        </Space>
+            <Search className="h-4 w-4" />
+            <span className="hidden sm:inline">Search</span>
+            <SearchShortcutKbd />
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="dashboard-user-btn" aria-label="Account menu">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <span className="dashboard-user-name">{userName}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-[var(--muted)] hidden sm:block" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+                <Settings className="h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  await authClient.signOut();
+                  router.push("/sign-in");
+                  router.refresh();
+                }}
+              >
+                <LogOut className="h-4 w-4" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-    </Header>
+    </header>
   );
 }

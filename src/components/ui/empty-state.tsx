@@ -1,6 +1,7 @@
-import { Button } from "antd";
+import { Inbox } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 
 type EmptyStateAction = {
   label: string;
@@ -20,21 +21,21 @@ type EmptyStateProps = {
 
 function ActionButton({
   action,
-  type = "default",
+  variant = "secondary",
 }: {
   action: EmptyStateAction;
-  type?: "primary" | "default" | "link";
+  variant?: "default" | "secondary" | "link";
 }) {
   if (action.href) {
     return (
-      <Link href={action.href}>
-        <Button type={type}>{action.label}</Button>
-      </Link>
+      <Button variant={variant} size="lg" asChild>
+        <Link href={action.href}>{action.label}</Link>
+      </Button>
     );
   }
 
   return (
-    <Button type={type} onClick={action.onClick}>
+    <Button variant={variant} size="lg" onClick={action.onClick}>
       {action.label}
     </Button>
   );
@@ -50,22 +51,26 @@ export function EmptyState({
   className = "",
 }: EmptyStateProps) {
   return (
-    <div className={`empty-state ${className}`.trim()}>
-      {icon ? <div className="empty-state-icon">{icon}</div> : null}
+    <div className={`empty-state ${className}`.trim()} role="status">
+      <div className="empty-state-icon" aria-hidden="true">
+        {icon ?? <Inbox size={24} strokeWidth={1.5} />}
+      </div>
       <h3 className="empty-state-title">{title}</h3>
-      {description ? <p className="empty-state-description">{description}</p> : null}
+      {description ? (
+        <p className="empty-state-description">{description}</p>
+      ) : null}
       {shortcut ? (
         <p className="empty-state-shortcut">
-          Shortcut: <kbd>{shortcut}</kbd>
+          Tip: press <kbd>{shortcut}</kbd>
         </p>
       ) : null}
       {primaryAction || secondaryAction ? (
         <div className="empty-state-actions">
           {primaryAction ? (
-            <ActionButton action={primaryAction} type="primary" />
+            <ActionButton action={primaryAction} variant="default" />
           ) : null}
           {secondaryAction ? (
-            <ActionButton action={secondaryAction} type="default" />
+            <ActionButton action={secondaryAction} variant="secondary" />
           ) : null}
         </div>
       ) : null}

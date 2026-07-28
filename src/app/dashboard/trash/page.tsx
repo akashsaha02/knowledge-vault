@@ -4,7 +4,7 @@ export default function TrashPage() {
   return (
     <DashboardItemPage
       title="Trash"
-      emptyDescription="Trash is empty"
+      emptyDescription="Deleted items will appear here for a while. You can bring them back."
       status="TRASHED"
     />
   );

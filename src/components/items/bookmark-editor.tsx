@@ -1,9 +1,12 @@
 "use client";
 
-import { App, Button, Input, Space } from "antd";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { previewBookmarkAction } from "@/features/items/bookmark.actions";
+import { toast } from "sonner";
 import { BookmarkViewer } from "@/components/items/bookmark-viewer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { previewBookmarkAction } from "@/features/items/bookmark.actions";
 import { useAutosave } from "@/hooks/use-autosave";
 
 type BookmarkEditorProps = {
@@ -24,7 +27,6 @@ export function BookmarkEditor({
   metadata: initialMetadata,
   onSave,
 }: BookmarkEditorProps) {
-  const { message } = App.useApp();
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
   const [metadata, setMetadata] = useState(initialMetadata);
@@ -52,10 +54,10 @@ export function BookmarkEditor({
         siteName: data.siteName,
         description: data.description,
       });
-      message.success("Bookmark metadata fetched");
+      toast.success("Bookmark metadata fetched");
       schedule();
     } catch {
-      message.error("Could not fetch URL metadata");
+      toast.error("Could not fetch URL metadata");
     } finally {
       setFetching(false);
     }
@@ -63,18 +65,26 @@ export function BookmarkEditor({
 
   return (
     <div className="bookmark-editor">
-      <Space.Compact className="w-full mb-4">
+      <div className="mb-4 flex w-full">
         <Input
+          className="rounded-r-none"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com"
           aria-label="Bookmark URL"
-          onPressEnter={() => void fetchMetadata()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void fetchMetadata();
+          }}
         />
-        <Button loading={fetching} type="primary" onClick={() => void fetchMetadata()}>
+        <Button
+          className="rounded-l-none"
+          disabled={fetching}
+          onClick={() => void fetchMetadata()}
+        >
+          {fetching ? <Loader2 className="animate-spin" /> : null}
           Fetch
         </Button>
-      </Space.Compact>
+      </div>
 
       <Input
         className="mb-4"

@@ -1,7 +1,11 @@
-import { Card, Tag } from "antd";
-import Title from "antd/es/typography/Title";
-import Paragraph from "antd/es/typography/Paragraph";
 import { notFound } from "next/navigation";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { SharePasswordGate } from "@/components/sharing/share-password-gate";
+import { ShareCopyButton } from "@/components/sharing/share-copy-button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryChip } from "@/components/ui/category-chip";
+import { BRAND_NAME } from "@/lib/brand";
 import { getPublicSharedContent } from "@/features/sharing/share.service";
 
 export default async function SharePage({
@@ -11,45 +15,76 @@ export default async function SharePage({
 }) {
   const { token } = await params;
   const shared = await getPublicSharedContent(token);
-  if (!shared) notFound();
+  if (!shared) {
+    notFound();
+  }
 
-  const { link, item } = shared;
+  if (shared.requiresPassword) {
+    return <SharePasswordGate token={token} />;
+  }
+
+  const { link, item } = shared as Extract<typeof shared, { requiresPassword: false }>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--background)]">
-      <Card className="max-w-2xl w-full !border-[var(--border)]">
-        <Title level={3}>Shared content</Title>
-        {!item ? (
-          <Paragraph className="text-[var(--muted)]">
-            This workspace share link is active but no specific item is attached.
-          </Paragraph>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mb-2">
-              <Tag>{item.type}</Tag>
-              {link.allowCopy ? <Tag color="blue">Copy allowed</Tag> : null}
-            </div>
-            <Title level={4}>{item.title}</Title>
-            {item.plainText ? (
-              <pre className="share-content-preview whitespace-pre-wrap font-mono text-sm bg-[var(--code-bg)] p-4 rounded-lg">
-                {item.plainText}
-              </pre>
+    <div className="share-page">
+      <header className="share-page-header">
+        <BrandLogo href="/" variant="lockup" />
+      </header>
+
+      <div className="share-page-body">
+        <Card className="max-w-2xl w-full">
+          <CardHeader>
+            <CardTitle>Shared via {BRAND_NAME}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!item ? (
+              <p className="text-[var(--muted)]">
+                This link is active but no item is attached yet. Ask the owner to
+                share a specific note or snippet.
+              </p>
             ) : (
-              <Paragraph className="text-[var(--muted)]">No text content.</Paragraph>
+              <>
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <CategoryChip type={item.type} />
+                  {link.allowCopy ? (
+                    <Badge variant="secondary">Copy allowed</Badge>
+                  ) : (
+                    <Badge variant="outline">Copy disabled</Badge>
+                  )}
+                </div>
+                <h2 className="text-xl font-semibold mb-3">{item.title}</h2>
+                {item.plainText ? (
+                  <pre
+                    className={`share-content-preview font-mono text-sm${link.allowCopy ? "" : " select-none"}`}
+                  >
+                    {item.plainText}
+                  </pre>
+                ) : (
+                  <p className="text-[var(--muted)]">No text content.</p>
+                )}
+                {item.tags.length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {item.tags.map((entry) => (
+                      <Badge key={entry.tag.id} variant="outline">
+                        {entry.tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
+                {link.allowCopy && item.plainText ? (
+                  <div className="mt-4">
+                    <ShareCopyButton text={item.plainText} />
+                  </div>
+                ) : null}
+              </>
             )}
-            {item.tags.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {item.tags.map((entry) => (
-                  <Tag key={entry.tag.id}>{entry.tag.name}</Tag>
-                ))}
-              </div>
-            ) : null}
-          </>
-        )}
-        <Paragraph type="secondary" className="text-xs mt-4">
-          Views: {link.viewCount + 1}
-        </Paragraph>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      <footer className="share-page-footer">
+        Powered by {BRAND_NAME}
+      </footer>
     </div>
   );
 }

@@ -1,11 +1,5 @@
-import { DashboardItemPage } from "@/components/dashboard/dashboard-item-page";
+import { redirect } from "next/navigation";
 
 export default function CommandsPage() {
-  return (
-    <DashboardItemPage
-      type="COMMAND"
-      title="Commands"
-      emptyDescription="No commands yet"
-    />
-  );
+  redirect("/dashboard/snippets?tab=commands");
 }

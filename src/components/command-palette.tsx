@@ -1,12 +1,19 @@
 "use client";
 
 import { Command } from "cmdk";
-import { Modal, Spin } from "antd";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { CategoryChip } from "@/components/ui/category-chip";
 import { searchAction } from "@/features/search/search.actions";
 import type { ItemType } from "@/generated/prisma/client";
-import { CREATE_LINKS, TYPE_ROUTES } from "@/lib/nav-config";
+import { CREATE_LINKS, getItemHref } from "@/lib/nav-config";
+import { navIcon } from "@/lib/nav-icons";
 import {
   addRecentSearch,
   getRecentItems,
@@ -16,9 +23,14 @@ import {
 import { useUiStore } from "@/stores/ui-store";
 
 const NAV_COMMANDS = [
+  { id: "notes", label: "Open notes", href: "/dashboard/notes" },
+  { id: "code", label: "Open code", href: "/dashboard/snippets" },
+  { id: "bookmarks", label: "Open saved links", href: "/dashboard/bookmarks" },
   { id: "search-page", label: "Go to search page", href: "/dashboard/search" },
+  { id: "files", label: "Open files", href: "/dashboard/files" },
+  { id: "favorites", label: "Open favorites", href: "/dashboard/favorites" },
   { id: "projects", label: "Open projects", href: "/dashboard/projects" },
-  { id: "inbox", label: "Open inbox", href: "/dashboard/inbox" },
+  { id: "trash", label: "Open trash", href: "/dashboard/trash" },
   { id: "settings", label: "Open settings", href: "/dashboard/settings" },
 ] as const;
 
@@ -117,106 +129,110 @@ export function CommandPalette({ workspaceId }: CommandPaletteProps) {
   const showSearchResults = query.trim().length >= 2;
 
   return (
-    <Modal
-      open={open}
-      onCancel={() => setOpen(false)}
-      footer={null}
-      title={null}
-      closable={false}
-      width={560}
-      className="command-palette-modal"
-      aria-label="Command palette"
-    >
-      <Command label="Command palette" className="w-full" shouldFilter={!showSearchResults}>
-        <Command.Input
-          placeholder="Search vault or type a command..."
-          value={query}
-          onValueChange={setQuery}
-        />
-        <Command.List>
-          {searching ? (
-            <div className="command-palette-loading">
-              <Spin size="small" /> Searching...
-            </div>
-          ) : null}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent
+        className="command-palette-modal max-w-[560px] p-0 gap-0 [&>button]:hidden"
+        aria-label="Command palette"
+      >
+        <DialogTitle className="sr-only">Command palette</DialogTitle>
+        <Command label="Command palette" className="w-full" shouldFilter={!showSearchResults}>
+          <div className="p-3 pb-0">
+            <Command.Input
+              placeholder="Search vault or type a command..."
+              value={query}
+              onValueChange={setQuery}
+            />
+          </div>
+          <Command.List className="max-h-[360px] overflow-y-auto p-2">
+            {searching ? (
+              <div className="command-palette-loading">
+                <LoadingSpinner size={14} /> Searching...
+              </div>
+            ) : null}
 
-          {showSearchResults ? (
-            <Command.Group heading="Results">
-              {results.length === 0 && !searching ? (
-                <Command.Empty>No results found.</Command.Empty>
-              ) : null}
-              {results.map((item) => {
-                const href = `${TYPE_ROUTES[item.type] ?? "/dashboard"}?item=${item.id}`;
-                const preview =
-                  item.plainText ?? item.plain_text ?? "No preview";
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={`${item.title} ${preview}`}
-                    onSelect={() => navigate(href)}
-                  >
-                    <span className="command-palette-item-title">{item.title}</span>
-                    <span className="command-palette-item-meta">{item.type}</span>
-                  </Command.Item>
-                );
-              })}
-            </Command.Group>
-          ) : (
-            <>
-              <Command.Group heading="Create">
-                {CREATE_LINKS.map((cmd) => (
-                  <Command.Item
-                    key={cmd.key}
-                    onSelect={() => navigate(cmd.href)}
-                  >
-                    Create {cmd.label.toLowerCase()}
-                  </Command.Item>
-                ))}
-              </Command.Group>
-
-              <Command.Group heading="Navigate">
-                {NAV_COMMANDS.map((cmd) => (
-                  <Command.Item
-                    key={cmd.id}
-                    onSelect={() => navigate(cmd.href)}
-                  >
-                    {cmd.label}
-                  </Command.Item>
-                ))}
-              </Command.Group>
-
-              {recentItems.length > 0 ? (
-                <Command.Group heading="Recent">
-                  {recentItems.map((item) => (
+            {showSearchResults ? (
+              <Command.Group heading="Results">
+                {results.length === 0 && !searching ? (
+                  <Command.Empty>No results found.</Command.Empty>
+                ) : null}
+                {results.map((item) => {
+                  const href = getItemHref(item.type, item.id);
+                  const preview =
+                    item.plainText ?? item.plain_text ?? "No preview";
+                  return (
                     <Command.Item
                       key={item.id}
-                      onSelect={() => navigate(item.href)}
+                      value={`${item.title} ${preview}`}
+                      onSelect={() => navigate(href)}
                     >
-                      {item.title}
-                      <span className="command-palette-item-meta">{item.type}</span>
+                      <span className="command-palette-item-title flex-1">{item.title}</span>
+                      <CategoryChip type={item.type} showIcon={false} />
                     </Command.Item>
-                  ))}
-                </Command.Group>
-              ) : null}
-
-              {recentSearches.length > 0 ? (
-                <Command.Group heading="Recent searches">
-                  {recentSearches.map((search) => (
+                  );
+                })}
+              </Command.Group>
+            ) : (
+              <>
+                <Command.Group heading="Create">
+                  {CREATE_LINKS.map((cmd) => (
                     <Command.Item
-                      key={search}
-                      onSelect={() => setQuery(search)}
+                      key={cmd.key}
+                      onSelect={() => navigate(cmd.href)}
                     >
-                      {search}
+                      {navIcon(cmd.href.split("?")[0])}
+                      <span className="command-palette-item-title">Create {cmd.label.toLowerCase()}</span>
                     </Command.Item>
                   ))}
                 </Command.Group>
-              ) : null}
 
-              <Command.Empty>No matching commands.</Command.Empty>
-            </>
-          )}
-        </Command.List>
-      </Command>
-    </Modal>
+                <Command.Group heading="Navigate">
+                  {NAV_COMMANDS.map((cmd) => (
+                    <Command.Item
+                      key={cmd.id}
+                      onSelect={() => navigate(cmd.href)}
+                    >
+                      {navIcon(cmd.href)}
+                      <span className="command-palette-item-title">{cmd.label}</span>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+
+                {recentItems.length > 0 ? (
+                  <Command.Group heading="Recent">
+                    {recentItems.map((item) => (
+                      <Command.Item
+                        key={item.id}
+                        onSelect={() => navigate(item.href)}
+                      >
+                        <span className="command-palette-item-title flex-1">{item.title}</span>
+                        <CategoryChip type={item.type} showIcon={false} />
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                ) : null}
+
+                {recentSearches.length > 0 ? (
+                  <Command.Group heading="Recent searches">
+                    {recentSearches.map((search) => (
+                      <Command.Item
+                        key={search}
+                        onSelect={() => setQuery(search)}
+                      >
+                        {search}
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                ) : null}
+              </>
+            )}
+          </Command.List>
+          <div className="command-palette-footer">
+            <span><kbd>⌘K</kbd> Toggle</span>
+            <span><kbd>⌘N</kbd> New note</span>
+            <span><kbd>⌘⇧N</kbd> New snippet</span>
+          </div>
+        </Command>
+      </DialogContent>
+    </Dialog>
   );
 }

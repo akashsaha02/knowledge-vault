@@ -1,11 +1,17 @@
 "use client";
 
-import { CopyOutlined } from "@ant-design/icons";
-import { App, Button, Select, Space } from "antd";
-import { useEffect, useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { CodeEditor } from "@/components/editor/code-editor";
+import { Copy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { CodeMirrorEditor } from "@/components/editor/codemirror-editor";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const LANGUAGES = [
   "typescript",
@@ -33,59 +39,65 @@ export function SnippetEditor({
   onCodeChange,
   onLanguageChange,
 }: SnippetEditorProps) {
-  const { message } = App.useApp();
   const [localCode, setLocalCode] = useState(code);
   const [localLanguage, setLocalLanguage] = useState(language);
+  const valueRef = useRef(code);
 
   useEffect(() => {
     setLocalCode(code);
+    valueRef.current = code;
+  }, [code]);
+
+  useEffect(() => {
     setLocalLanguage(language);
-  }, [code, language]);
+  }, [language]);
 
   return (
-    <div>
-      <Space className="mb-3" wrap>
+    <div className="snippet-editor">
+      <div className="editor-toolbar mb-3 flex flex-wrap gap-2">
         <Select
           value={localLanguage}
-          onChange={(value) => {
+          onValueChange={(value) => {
             setLocalLanguage(value);
             void onLanguageChange(value);
           }}
-          options={LANGUAGES.map((l) => ({ value: l, label: l }))}
-          style={{ width: 140 }}
-          aria-label="Snippet language"
-        />
+        >
+          <SelectTrigger className="w-[140px]" aria-label="Snippet language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LANGUAGES.map((l) => (
+              <SelectItem key={l} value={l}>
+                {l}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
-          icon={<CopyOutlined />}
+          type="button"
+          variant="secondary"
+          size="sm"
           onClick={async () => {
             await navigator.clipboard.writeText(localCode);
-            message.success("Copied to clipboard");
+            toast.success("Copied to clipboard");
           }}
         >
+          <Copy className="h-4 w-4" />
           Copy
         </Button>
-      </Space>
-      <CodeEditor
+      </div>
+      <CodeMirrorEditor
         value={localCode}
-        onChange={setLocalCode}
-        onSave={onCodeChange}
+        language={localLanguage}
+        minHeight="480px"
         placeholder="Paste or write your snippet..."
-        rows={12}
+        aria-label="Code snippet"
+        onChange={(value) => {
+          setLocalCode(value);
+          valueRef.current = value;
+        }}
+        onBlur={() => void onCodeChange(valueRef.current)}
       />
-      {localCode.trim() ? (
-        <div className="mt-4">
-          <p className="item-section-label">Preview</p>
-          <SyntaxHighlighter
-            language={localLanguage}
-            style={oneDark}
-            showLineNumbers
-            wrapLongLines
-            customStyle={{ borderRadius: 8, margin: 0 }}
-          >
-            {localCode}
-          </SyntaxHighlighter>
-        </div>
-      ) : null}
     </div>
   );
 }

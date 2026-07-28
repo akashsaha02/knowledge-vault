@@ -1,8 +1,14 @@
 "use client";
 
-import { Select } from "antd";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getWorkspacesAction,
   switchWorkspaceAction,
@@ -27,17 +33,21 @@ export function WorkspaceSwitcher({
   return (
     <Select
       value={currentWorkspaceId}
-      className="workspace-switcher"
-      popupMatchSelectWidth={false}
-      options={workspaces.map((m) => ({
-        value: m.workspaceId,
-        label: m.workspace.name,
-      }))}
-      onChange={async (workspaceId) => {
+      onValueChange={async (workspaceId) => {
         await switchWorkspaceAction(workspaceId);
         router.refresh();
       }}
-      placeholder={currentWorkspaceName}
-    />
+    >
+      <SelectTrigger className="workspace-switcher">
+        <SelectValue placeholder={currentWorkspaceName} />
+      </SelectTrigger>
+      <SelectContent>
+        {workspaces.map((m) => (
+          <SelectItem key={m.workspaceId} value={m.workspaceId}>
+            {m.workspace.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

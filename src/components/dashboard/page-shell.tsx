@@ -17,18 +17,17 @@ export function PageShell({
   children,
   fullHeight = false,
 }: PageShellProps) {
-  const header = (
-    <PageHeader title={title} description={description} actions={actions} />
-  );
-
   if (fullHeight) {
     return (
       <div className="page-shell page-shell--full-height">
-        {header}
-        <div className="page-shell-body">{children}</div>
+        <div className="page-shell-body page-shell-body--fill">{children}</div>
       </div>
     );
   }
+
+  const header = (
+    <PageHeader title={title} description={description} actions={actions} />
+  );
 
   return (
     <div className="page-shell">

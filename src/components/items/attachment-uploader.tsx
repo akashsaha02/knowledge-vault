@@ -1,8 +1,9 @@
 "use client";
 
-import { UploadOutlined } from "@ant-design/icons";
-import { App, Button, Upload } from "antd";
-import { useEffect, useState } from "react";
+import { Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   confirmUploadAction,
   getDownloadUrlAction,
@@ -19,57 +20,64 @@ export function AttachmentUploader({
   workspaceId: string;
   itemId: string;
 }) {
-  const { message } = App.useApp();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     listAttachmentsAction(workspaceId, itemId).then(setAttachments);
   }, [workspaceId, itemId]);
 
+  async function handleUpload(file: File) {
+    try {
+      const { uploadUrl, storageKey } = await getUploadUrlAction(
+        workspaceId,
+        itemId,
+        file.name,
+        file.type,
+        file.size,
+      );
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      const attachment = await confirmUploadAction(
+        workspaceId,
+        itemId,
+        storageKey,
+        file.name,
+        file.type,
+        file.size,
+      );
+      setAttachments((prev) => [attachment, ...prev]);
+      toast.success("File uploaded");
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Upload failed";
+      toast.error(
+        msg.includes("SUPABASE_SERVICE_ROLE_KEY")
+          ? "File uploads are not configured. Add SUPABASE_SERVICE_ROLE_KEY to .env and restart the dev server."
+          : msg,
+      );
+    }
+  }
+
   return (
     <div className="mt-4">
-      <Upload
-        showUploadList={false}
-        customRequest={async ({ file, onSuccess, onError }) => {
-          try {
-            const uploadFile = file as File;
-            const { uploadUrl, storageKey } = await getUploadUrlAction(
-              workspaceId,
-              itemId,
-              uploadFile.name,
-              uploadFile.type,
-              uploadFile.size,
-            );
-            await fetch(uploadUrl, {
-              method: "PUT",
-              body: uploadFile,
-              headers: { "Content-Type": uploadFile.type },
-            });
-            const attachment = await confirmUploadAction(
-              workspaceId,
-              itemId,
-              storageKey,
-              uploadFile.name,
-              uploadFile.type,
-              uploadFile.size,
-            );
-            setAttachments((prev) => [attachment, ...prev]);
-            onSuccess?.(attachment);
-            message.success("File uploaded");
-          } catch (error) {
-            onError?.(error as Error);
-            const msg =
-              error instanceof Error ? error.message : "Upload failed";
-            message.error(
-              msg.includes("SUPABASE_SERVICE_ROLE_KEY")
-                ? "File uploads are not configured. Add SUPABASE_SERVICE_ROLE_KEY to .env and restart the dev server."
-                : msg,
-            );
-          }
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleUpload(file);
+          e.target.value = "";
         }}
-      >
-        <Button icon={<UploadOutlined />}>Upload attachment</Button>
-      </Upload>
+      />
+      <Button onClick={() => fileInputRef.current?.click()}>
+        <Upload className="h-4 w-4" />
+        Upload attachment
+      </Button>
 
       {attachments.length > 0 ? (
         <ul className="attachment-list">
@@ -82,8 +90,9 @@ export function AttachmentUploader({
                 </span>
               </span>
               <Button
-                type="link"
-                size="small"
+                variant="link"
+                size="sm"
+                className="h-auto p-0"
                 onClick={async () => {
                   const { url } = await getDownloadUrlAction(
                     workspaceId,

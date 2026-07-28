@@ -1,24 +1,29 @@
 "use client";
 
 import {
-  BookOutlined,
-  CodeOutlined,
-  ConsoleSqlOutlined,
-  DownOutlined,
-  PlusOutlined,
-  RobotOutlined,
-  StarOutlined,
-} from "@ant-design/icons";
-import { Button, Dropdown } from "antd";
+  BookOpen,
+  Code,
+  Link as LinkIcon,
+  Paperclip,
+  Plus,
+  Terminal,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { CREATE_LINKS } from "@/lib/nav-config";
 
 const CREATE_ICONS: Record<string, React.ReactNode> = {
-  note: <BookOutlined />,
-  snippet: <CodeOutlined />,
-  command: <ConsoleSqlOutlined />,
-  bookmark: <StarOutlined />,
-  prompt: <RobotOutlined />,
+  note: <BookOpen className="h-4 w-4" />,
+  bookmark: <LinkIcon className="h-4 w-4" />,
+  snippet: <Code className="h-4 w-4" />,
+  command: <Terminal className="h-4 w-4" />,
+  file: <Paperclip className="h-4 w-4" />,
 };
 
 type CreateMenuProps = {
@@ -35,33 +40,30 @@ export function CreateMenu({
   const router = useRouter();
 
   return (
-    <Dropdown
-      menu={{
-        items: CREATE_LINKS.map((item) => ({
-          key: item.key,
-          icon: CREATE_ICONS[item.key],
-          label: item.label,
-          onClick: () => {
-            router.push(item.href);
-            onNavigate?.();
-          },
-        })),
-      }}
-      trigger={["click"]}
-    >
-      <Button
-        type="primary"
-        block={block}
-        icon={<PlusOutlined />}
-        className={collapsed ? "create-menu-collapsed" : undefined}
-        aria-label="Create new item"
-      >
-        {collapsed ? null : (
-          <>
-            New <DownOutlined className="create-menu-chevron" />
-          </>
-        )}
-      </Button>
-    </Dropdown>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          className={`sider-create-btn${collapsed ? " create-menu-collapsed" : ""}${block ? " w-full" : ""}`}
+          aria-label="Create something new"
+        >
+          <Plus className="h-4 w-4" />
+          {collapsed ? null : "New"}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {CREATE_LINKS.map((item) => (
+          <DropdownMenuItem
+            key={item.key}
+            onClick={() => {
+              router.push(item.href);
+              onNavigate?.();
+            }}
+          >
+            {CREATE_ICONS[item.key]}
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { assertValidAttachmentStorageKey } from "@/features/attachments/attachment.utils";
+import {
+  hashSharePassword,
+  verifySharePassword,
+} from "@/features/sharing/share-password";
 import { getAuthSecret } from "@/lib/auth-secret";
 
 describe("assertValidAttachmentStorageKey", () => {
@@ -49,6 +53,15 @@ describe("assertValidAttachmentStorageKey", () => {
         itemId,
       ),
     ).toThrow("Invalid storage key");
+  });
+});
+
+describe("share password hashing", () => {
+  it("hashes and verifies passwords", () => {
+    const hashed = hashSharePassword("secret-pass");
+    expect(hashed.startsWith("scrypt:")).toBe(true);
+    expect(verifySharePassword("secret-pass", hashed)).toBe(true);
+    expect(verifySharePassword("wrong-pass", hashed)).toBe(false);
   });
 });
 

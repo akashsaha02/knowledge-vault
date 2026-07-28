@@ -4,7 +4,7 @@ export default function FavoritesPage() {
   return (
     <DashboardItemPage
       title="Favorites"
-      emptyDescription="No favorites yet"
+      emptyDescription="Tap the star on something important to find it here"
       favoritesOnly
     />
   );

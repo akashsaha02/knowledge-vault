@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Spin } from "antd";
-import { useUiStore } from "@/stores/ui-store";
+import { useAutosave } from "@/hooks/use-autosave";
+import { EditorSkeleton } from "@/components/ui/loading-skeleton";
 import {
   contentToHtml,
   htmlToContent,
@@ -15,7 +15,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), {
   ssr: false,
   loading: () => (
     <div className="editor-loading">
-      <Spin />
+      <EditorSkeleton />
     </div>
   ),
 });
@@ -30,83 +30,75 @@ const TOOLBAR = [
 ];
 
 type NoteEditorProps = {
+  itemId: string;
   content?: unknown;
   plainText?: string | null;
   onChange?: (json: unknown, plainText: string) => void;
   onSave?: (json: unknown, plainText: string) => Promise<void>;
   placeholder?: string;
+  className?: string;
 };
 
 export function NoteEditor({
+  itemId,
   content,
   plainText,
   onChange,
   onSave,
   placeholder = "Start writing...",
+  className,
 }: NoteEditorProps) {
-  const setSaveStatus = useUiStore((s) => s.setSaveStatus);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [html, setHtml] = useState(() => contentToHtml(content, plainText));
-  const itemKey = JSON.stringify(content ?? plainText ?? "");
+  const loadedItemIdRef = useRef(itemId);
+  const htmlRef = useRef(html);
+  htmlRef.current = html;
 
   useEffect(() => {
-    setHtml(contentToHtml(content, plainText));
-  }, [itemKey, content, plainText]);
+    if (itemId !== loadedItemIdRef.current) {
+      loadedItemIdRef.current = itemId;
+      setHtml(contentToHtml(content, plainText));
+    }
+  }, [itemId, content, plainText]);
 
-  const persist = useCallback(
-    (nextHtml: string, immediate = false) => {
-      const json = htmlToContent(nextHtml);
-      const nextPlainText = htmlToPlainText(nextHtml);
+  const saveContent = useCallback(async () => {
+    if (!onSave) return;
+    const json = htmlToContent(htmlRef.current);
+    const nextPlainText = htmlToPlainText(htmlRef.current);
+    await onSave(json, nextPlainText);
+  }, [onSave]);
+
+  const { schedule, flush } = useAutosave(saveContent, { enabled: Boolean(onSave) });
+
+  const handleChange = useCallback(
+    (value: string) => {
+      setHtml(value);
+      const json = htmlToContent(value);
+      const nextPlainText = htmlToPlainText(value);
       onChange?.(json, nextPlainText);
-
-      if (!onSave) return;
-
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-
-      const runSave = async () => {
-        setSaveStatus("saving");
-        try {
-          await onSave(json, nextPlainText);
-          setSaveStatus("saved");
-        } catch {
-          setSaveStatus("error");
-        }
-      };
-
-      if (immediate) {
-        void runSave();
-        return;
-      }
-
-      setSaveStatus("editing");
-      debounceRef.current = setTimeout(() => {
-        void runSave();
-      }, 800);
+      if (onSave) schedule();
     },
-    [onChange, onSave, setSaveStatus],
+    [onChange, onSave, schedule],
   );
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
-        void persist(html, true);
+        void flush();
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [html, persist]);
+  }, [flush]);
 
   return (
-    <div className="editor-shell note-editor">
+    <div className={`editor-shell note-editor${className ? ` ${className}` : ""}`}>
       <ReactQuill
+        key={itemId}
         theme="snow"
         value={html}
-        onChange={(value) => {
-          setHtml(value);
-          persist(value);
-        }}
+        onChange={handleChange}
         placeholder={placeholder}
         modules={{ toolbar: TOOLBAR }}
         className="note-editor-quill"

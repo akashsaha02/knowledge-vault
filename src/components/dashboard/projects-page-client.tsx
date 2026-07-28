@@ -1,11 +1,23 @@
 "use client";
 
-import { App, Button, Card, Col, Form, Input, Modal, Row } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { Plus } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { PageShell } from "@/components/dashboard/page-shell";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageSkeleton } from "@/components/ui/loading-skeleton";
+import { ContentFade } from "@/components/ui/content-fade";
+import { PageBodySkeleton } from "@/components/ui/loading-skeleton";
 import {
   createProjectAction,
   deleteProjectAction,
@@ -15,17 +27,32 @@ import {
 type Project = Awaited<ReturnType<typeof listProjectsAction>>[number];
 
 export function ProjectsPageClient({ workspaceId }: { workspaceId: string }) {
-  const { message } = App.useApp();
   const [projects, setProjects] = useState<Project[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    listProjectsAction(workspaceId).then((data) => {
-      setProjects(data);
-      setLoading(false);
-    });
+    setError(null);
+
+    listProjectsAction(workspaceId)
+      .then((data) => {
+        if (!cancelled) setProjects(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load projects");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [workspaceId]);
 
   return (
@@ -33,13 +60,30 @@ export function ProjectsPageClient({ workspaceId }: { workspaceId: string }) {
       title="Projects"
       description="Group related notes, snippets, and files into focused projects."
       actions={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+        <Button onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" />
           New project
         </Button>
       }
     >
       {loading ? (
-        <PageSkeleton />
+        <PageBodySkeleton />
+      ) : error ? (
+        <EmptyState
+          title="Could not load projects"
+          description={error}
+          primaryAction={{
+            label: "Try again",
+            onClick: () => {
+              setLoading(true);
+              setError(null);
+              listProjectsAction(workspaceId)
+                .then(setProjects)
+                .catch(() => setError("Could not load projects"))
+                .finally(() => setLoading(false));
+            },
+          }}
+        />
       ) : projects.length === 0 ? (
         <EmptyState
           title="No projects yet"
@@ -50,70 +94,109 @@ export function ProjectsPageClient({ workspaceId }: { workspaceId: string }) {
           }}
         />
       ) : (
-      <Row gutter={[16, 16]}>
-        {projects.map((project) => (
-          <Col key={project.id} xs={24} sm={12} xl={8} xxl={6}>
-            <Card
-              className="h-full !border-[var(--border)]"
-              title={project.name}
-              extra={
-                <Button
-                  danger
-                  size="small"
-                  type="text"
-                  onClick={async () => {
-                    await deleteProjectAction(workspaceId, project.id);
-                    message.success("Project deleted");
-                    setProjects((prev) => prev.filter((p) => p.id !== project.id));
-                  }}
+        <ContentFade>
+          <div className="key-card-grid">
+            {projects.map((project) => (
+              <article key={project.id} className="key-card">
+                <div className="key-card-header">
+                  <Link
+                    href={`/dashboard/projects/${project.id}`}
+                    className="key-card-title"
+                  >
+                    {project.name}
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[var(--destructive)] hover:text-[var(--destructive)]"
+                    onClick={async (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      await deleteProjectAction(workspaceId, project.id);
+                      toast.success("Project deleted");
+                      setProjects((prev) => prev.filter((p) => p.id !== project.id));
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+                <Link
+                  href={`/dashboard/projects/${project.id}`}
+                  className="block text-inherit no-underline"
                 >
-                  Delete
-                </Button>
-              }
-            >
-              <p className="text-[var(--muted)] mb-3 min-h-[40px]">
-                {project.description || "No description"}
-              </p>
-              <p className="text-xs text-[var(--muted)]">
-                {project._count.items} item{project._count.items === 1 ? "" : "s"}
-              </p>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+                  <p className="key-card-desc">
+                    {project.description || "No description"}
+                  </p>
+                  <p className="key-card-meta">
+                    {project._count.items} item
+                    {project._count.items === 1 ? "" : "s"}
+                  </p>
+                </Link>
+              </article>
+            ))}
+          </div>
+        </ContentFade>
       )}
 
-      <Modal
-        title="Create project"
+      <Dialog
         open={open}
-        onCancel={() => setOpen(false)}
-        footer={null}
-        destroyOnHidden
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            setName("");
+            setDescription("");
+          }
+        }}
       >
-        <Form
-          layout="vertical"
-          onFinish={async (values) => {
-            const project = await createProjectAction(
-              workspaceId,
-              values.name,
-              values.description,
-            );
-            setProjects((prev) => [...prev, { ...project, _count: { items: 0 } }]);
-            setOpen(false);
-            message.success("Project created");
-          }}
-        >
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-            <Input placeholder="e.g. Side project, Work notes" />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea placeholder="What is this project about?" rows={3} />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Create project
-          </Button>
-        </Form>
-      </Modal>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create project</DialogTitle>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!name.trim()) return;
+              const project = await createProjectAction(
+                workspaceId,
+                name.trim(),
+                description,
+              );
+              setProjects((prev) => [...prev, { ...project, _count: { items: 0 } }]);
+              setOpen(false);
+              setName("");
+              setDescription("");
+              toast.success("Project created");
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Name</Label>
+              <Input
+                id="project-name"
+                name="name"
+                placeholder="e.g. Side project, Work notes"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-description">Description</Label>
+              <Textarea
+                id="project-description"
+                name="description"
+                placeholder="What is this project about?"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Create project
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

@@ -24,6 +24,7 @@ export async function searchWorkspaceItems(
 
   return findItems({
     workspaceId: input.workspaceId,
+    userId,
     query: input.query,
     type: input.type,
     status: input.status,

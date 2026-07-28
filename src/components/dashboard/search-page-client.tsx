@@ -1,10 +1,22 @@
 "use client";
 
-import { Input, Select } from "antd";
+import { Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageShell } from "@/components/dashboard/page-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ContentFade } from "@/components/ui/content-fade";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 import { searchAction } from "@/features/search/search.actions";
 import type { ItemType } from "@/generated/prisma/client";
 import { TYPE_ROUTES } from "@/lib/nav-config";
@@ -29,8 +41,12 @@ const typeLabels: Record<string, string> = {
   FILE: "Files",
 };
 
+const ALL_TYPES = "__all__";
+
 export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(initialQuery);
   const [type, setType] = useState<ItemType | undefined>();
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,35 +95,68 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
       description="Find notes, snippets, and more across your vault."
     >
       <div className="search-bar">
-        <Input.Search
-          placeholder="Search your vault..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onSearch={(value) => void runSearch(value)}
-          loading={loading}
-          enterButton="Search"
-          size="large"
-          allowClear
-        />
+        <div className="relative flex flex-1 items-center">
+          <Input
+            className="pr-20"
+            placeholder="Search your vault..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void runSearch(query);
+            }}
+            aria-label="Search your vault"
+          />
+          {query ? (
+            <button
+              type="button"
+              className="absolute right-[5.5rem] text-[var(--muted)] hover:text-[var(--foreground)]"
+              onClick={() => {
+                setQuery("");
+                setResults([]);
+                setHasSearched(false);
+              }}
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+          <Button
+            className="absolute right-1"
+            size="sm"
+            disabled={loading}
+            onClick={() => void runSearch(query)}
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <Search className="h-4 w-4" />}
+            Search
+          </Button>
+        </div>
         <Select
-          allowClear
-          placeholder="All types"
-          size="large"
-          style={{ minWidth: 160 }}
-          value={type}
-          onChange={(value) => {
-            setType(value);
-            if (query.trim()) void runSearch(query, value);
+          value={type ?? ALL_TYPES}
+          onValueChange={(value) => {
+            const nextType = value === ALL_TYPES ? undefined : (value as ItemType);
+            setType(nextType);
+            if (query.trim()) void runSearch(query, nextType);
           }}
-          options={Object.entries(typeLabels).map(([value, label]) => ({
-            value,
-            label,
-          }))}
-        />
+        >
+          <SelectTrigger className="min-w-[160px]" aria-label="Filter by type">
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_TYPES}>All types</SelectItem>
+            {Object.entries(typeLabels).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
-        <p className="search-hint">Searching...</p>
+        <div className="search-loading">
+          <LoadingSpinner size={16} />
+          <span>Searching...</span>
+        </div>
       ) : !hasSearched ? (
         <EmptyState
           title="Search your vault"
@@ -128,6 +177,7 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
           }}
         />
       ) : (
+        <ContentFade>
         <div className="search-results">
           <p className="search-results-count">
             {results.length} result{results.length === 1 ? "" : "s"}
@@ -166,6 +216,7 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
             </section>
           ))}
         </div>
+        </ContentFade>
       )}
     </PageShell>
   );

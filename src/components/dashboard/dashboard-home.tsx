@@ -1,28 +1,16 @@
 "use client";
 
-import {
-  BookOutlined,
-  CodeOutlined,
-  InboxOutlined,
-  PlusOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
-import { Button, Col, Row, Tag } from "antd";
+import { BookOpen, Code2, Folder, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist";
 import { WelcomeModal } from "@/components/onboarding/welcome-modal";
-import { PageShell } from "@/components/dashboard/page-shell";
 import { QuickCapture } from "@/components/dashboard/quick-capture";
+import { CategoryChip } from "@/components/ui/category-chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatRelativeTime } from "@/lib/format-date";
-import { TYPE_ROUTES } from "@/lib/nav-config";
-
-const shortcuts = [
-  { href: "/dashboard/notes?new=1", icon: <BookOutlined />, label: "Note" },
-  { href: "/dashboard/snippets?new=1", icon: <CodeOutlined />, label: "Snippet" },
-  { href: "/dashboard/inbox", icon: <InboxOutlined />, label: "Inbox" },
-  { href: "/dashboard/search", icon: <SearchOutlined />, label: "Search" },
-];
+import { getItemHref } from "@/lib/nav-config";
+import type { ItemType } from "@/generated/prisma/client";
 
 type DashboardItem = {
   id: string;
@@ -31,7 +19,6 @@ type DashboardItem = {
   plainText: string | null;
   updatedAt: Date | string;
   isPinned?: boolean;
-  isFavorite?: boolean;
 };
 
 type DashboardHomeProps = {
@@ -47,23 +34,24 @@ type DashboardHomeProps = {
   };
 };
 
-function NoteCard({ item }: { item: DashboardItem }) {
-  const href = `${TYPE_ROUTES[item.type as keyof typeof TYPE_ROUTES] ?? "/dashboard/notes"}?item=${item.id}`;
-  const preview = item.plainText?.trim() || "No additional text";
+const QUICK_LINKS = [
+  { href: "/dashboard/notes?new=1", label: "Note", icon: BookOpen },
+  { href: "/dashboard/bookmarks?new=1", label: "Link", icon: LinkIcon },
+  { href: "/dashboard/snippets?new=1", label: "Code", icon: Code2 },
+  { href: "/dashboard/projects", label: "Project", icon: Folder },
+] as const;
 
-  return (
-    <Link href={href} className="keep-note-card">
-      {item.isPinned ? <span className="keep-note-card-pin">Pinned</span> : null}
-      <h3 className="keep-note-card-title">
-        {item.title.startsWith("Untitled") ? "Untitled" : item.title}
-      </h3>
-      <p className="keep-note-card-preview">{preview}</p>
-      <div className="keep-note-card-footer">
-        <Tag className="keep-note-card-tag">{item.type}</Tag>
-        <span>{formatRelativeTime(item.updatedAt)}</span>
-      </div>
-    </Link>
-  );
+function getGreeting(userName: string): string {
+  const hour = new Date().getHours();
+  const name = userName.split(" ")[0];
+  if (hour < 12) return `Good morning, ${name}`;
+  if (hour < 17) return `Good afternoon, ${name}`;
+  return `Good evening, ${name}`;
+}
+
+function displayTitle(title: string): string {
+  if (!title || title.startsWith("Untitled")) return "Untitled";
+  return title;
 }
 
 export function DashboardHome({
@@ -72,16 +60,22 @@ export function DashboardHome({
   items,
   stats,
 }: DashboardHomeProps) {
+  const router = useRouter();
   const pinned = items.filter((item) => item.isPinned);
-  const others = items.filter((item) => !item.isPinned);
-  const isNewUser = items.length === 0;
+  const recents = items.filter((item) => !item.isPinned).slice(0, 8);
 
   return (
-    <PageShell
-      title={isNewUser ? `Welcome, ${userName}` : `Welcome back, ${userName}`}
-      description="Capture ideas quickly, organize by project, and find anything with search."
-    >
+    <div className="home-dashboard">
       <WelcomeModal />
+
+      <header className="home-hero">
+        <div className="home-hero-text">
+          <h1 className="home-greeting">{getGreeting(userName)}</h1>
+          <p className="home-subline">Capture an idea, link, or snippet — it&apos;s saved instantly.</p>
+        </div>
+        <QuickCapture workspaceId={workspaceId} />
+      </header>
+
       <OnboardingChecklist
         hasNote={stats.hasNote}
         hasSnippet={stats.hasSnippet}
@@ -90,62 +84,86 @@ export function DashboardHome({
         hasTag={stats.hasTag}
       />
 
-      <QuickCapture workspaceId={workspaceId} />
-
-      <div className="home-shortcuts">
-        {shortcuts.map((shortcut) => (
-          <Link key={shortcut.href} href={shortcut.href} className="home-shortcut">
-            {shortcut.icon}
-            <span>{shortcut.label}</span>
-          </Link>
-        ))}
-      </div>
+      <section className="home-quick-links" aria-label="Quick create">
+        {QUICK_LINKS.map((link) => {
+          const Icon = link.icon;
+          return (
+            <Link key={link.href} href={link.href} className="home-quick-link">
+              <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+              <span>{link.label}</span>
+            </Link>
+          );
+        })}
+      </section>
 
       {items.length === 0 ? (
         <EmptyState
-          title="Your vault is ready"
-          description="Capture a quick note above, or pick a template to get started."
+          className="home-empty-state"
+          title="Your nook is empty"
+          description="Start with a note, saved link, or code snippet. Everything you create shows up here."
           primaryAction={{
-            label: "Create your first note",
+            label: "Write a note",
             href: "/dashboard/notes?new=1",
           }}
           secondaryAction={{
-            label: "Browse snippets",
-            href: "/dashboard/snippets?new=1",
+            label: "Save a link",
+            href: "/dashboard/bookmarks?new=1",
           }}
         />
       ) : (
-        <>
-          {pinned.length > 0 ? (
-            <section className="home-notes-section">
-              <div className="home-section-header">
-                <h2>Pinned</h2>
-              </div>
-              <div className="keep-notes-grid">
-                {pinned.map((item) => (
-                  <NoteCard key={item.id} item={item} />
-                ))}
-              </div>
-            </section>
-          ) : null}
+        <section className="home-recents">
+          <div className="home-recents-header">
+            <h2 className="home-recents-title">
+              {pinned.length > 0 ? "Pinned & recent" : "Recently saved"}
+            </h2>
+            <Link href="/dashboard/search" className="home-recents-link">
+              Search all
+            </Link>
+          </div>
 
-          <section className="home-notes-section">
-            <div className="home-section-header">
-              <h2>{pinned.length > 0 ? "Recent" : "Recent items"}</h2>
-              <Link href="/dashboard/notes">
-                <Button type="link" icon={<PlusOutlined />}>
-                  View all
-                </Button>
-              </Link>
-            </div>
-            <div className="keep-notes-grid">
-              {(pinned.length > 0 ? others : items).map((item) => (
-                <NoteCard key={item.id} item={item} />
-              ))}
-            </div>
-          </section>
-        </>
+          <ul className="home-recent-list">
+            {pinned.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="home-recent-row"
+                  onClick={() =>
+                    router.push(getItemHref(item.type as ItemType, item.id))
+                  }
+                >
+                  <CategoryChip type={item.type} showIcon={false} />
+                  <span className="home-recent-title">{displayTitle(item.title)}</span>
+                  {item.plainText ? (
+                    <span className="home-recent-preview">{item.plainText}</span>
+                  ) : null}
+                  <span className="home-recent-meta">
+                    {item.isPinned ? "Pinned · " : ""}
+                    {formatRelativeTime(item.updatedAt)}
+                  </span>
+                </button>
+              </li>
+            ))}
+            {recents.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="home-recent-row"
+                  onClick={() =>
+                    router.push(getItemHref(item.type as ItemType, item.id))
+                  }
+                >
+                  <CategoryChip type={item.type} showIcon={false} />
+                  <span className="home-recent-title">{displayTitle(item.title)}</span>
+                  {item.plainText ? (
+                    <span className="home-recent-preview">{item.plainText}</span>
+                  ) : null}
+                  <span className="home-recent-meta">{formatRelativeTime(item.updatedAt)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-    </PageShell>
+    </div>
   );
 }

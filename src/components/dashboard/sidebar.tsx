@@ -1,47 +1,36 @@
 "use client";
 
-import Link from "next/link";
-import { Layout } from "antd";
-import { useDocumentTheme } from "@/components/providers/theme-context";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { CreateMenu } from "@/components/dashboard/create-menu";
 import { DashboardNavMenu } from "@/components/dashboard/nav-menu";
+import { SidebarPersist } from "@/components/dashboard/sidebar-persist";
+import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
-
-const { Sider } = Layout;
 
 export function DashboardSidebar() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
-  const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
-  const mode = useDocumentTheme();
 
   return (
-    <Sider
-      collapsible
-      collapsed={collapsed}
-      onCollapse={setSidebarCollapsed}
-      width={260}
-      collapsedWidth={72}
-      theme={mode === "dark" ? "dark" : "light"}
-      className="dashboard-sider dashboard-sider-desktop"
-      trigger={null}
-    >
-      <Link
-        href="/dashboard"
-        className={`sider-brand ${collapsed ? "sider-brand-collapsed" : ""}`}
+    <>
+      <SidebarPersist />
+      <aside
+        className={cn(
+          "dashboard-sider dashboard-sider-desktop",
+          collapsed ? "dashboard-sider--collapsed" : "dashboard-sider--expanded",
+        )}
       >
-        <span className="sider-brand-icon">KV</span>
-        {!collapsed ? (
-          <span className="sider-brand-text">Knowledge Vault</span>
-        ) : null}
-      </Link>
+        <div className={cn("sider-brand", collapsed && "sider-brand-collapsed")}>
+          <BrandLogo href="/dashboard" collapsed={collapsed} variant="lockup" />
+        </div>
 
-      <div className="sider-quick-actions">
-        <CreateMenu block collapsed={collapsed} />
-      </div>
+        <div className="sider-quick-actions">
+          <CreateMenu block collapsed={collapsed} />
+        </div>
 
-      <div className="sider-menu-wrap">
-        <DashboardNavMenu defaultLibraryOpen defaultOrganizeOpen={false} />
-      </div>
-    </Sider>
+        <div className="sider-menu-wrap">
+          <DashboardNavMenu collapsed={collapsed} />
+        </div>
+      </aside>
+    </>
   );
 }

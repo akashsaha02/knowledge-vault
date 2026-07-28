@@ -7,20 +7,21 @@ import type { ItemStatus, ItemType } from "@/generated/prisma/client";
 
 type DashboardItemPageProps = {
   type?: ItemType;
+  types?: ItemType[];
   status?: ItemStatus;
   title: string;
   description?: string;
   emptyDescription: string;
   favoritesOnly?: boolean;
+  projectId?: string;
+  collectionId?: string;
 };
 
 const PAGE_DESCRIPTIONS: Record<string, string> = {
-  Inbox: "Drafts and unsorted items waiting to be organized.",
   Notes: "Write and organize your notes with a rich text editor.",
-  Snippets: "Save and reuse code snippets with syntax highlighting.",
-  Commands: "Store shell commands and terminal one-liners.",
-  Bookmarks: "Keep track of useful links and web resources.",
-  Prompts: "Manage AI prompts and templates.",
+  Code: "Save and reuse code snippets and terminal commands.",
+  "Saved Links": "Keep track of useful links and web resources.",
+  "AI Prompts": "Manage AI prompts and templates.",
   Files: "Upload and reference file attachments.",
   Favorites: "Quick access to your starred items.",
   Archive: "Items you've archived but haven't deleted.",
@@ -29,11 +30,14 @@ const PAGE_DESCRIPTIONS: Record<string, string> = {
 
 export async function DashboardItemPage({
   type,
+  types,
   status,
   title,
   description,
   emptyDescription,
   favoritesOnly,
+  projectId,
+  collectionId,
 }: DashboardItemPageProps) {
   const user = await requireUser();
   const workspaceId = await getActiveWorkspace(user.id);
@@ -42,24 +46,38 @@ export async function DashboardItemPage({
   const initialItems = await listAccessibleItems(user.id, {
     workspaceId,
     type,
+    types,
     status,
     favoritesOnly,
+    projectId,
+    collectionId,
     limit: 50,
   });
 
+  const isSplitPage =
+    status === "ACTIVE" &&
+    !favoritesOnly &&
+    ((type && ["NOTE", "SNIPPET", "COMMAND", "PROMPT"].includes(type)) ||
+      Boolean(types?.length));
+
   return (
     <PageShell
-      title={title}
-      description={description ?? PAGE_DESCRIPTIONS[title]}
-      fullHeight
+      title={isSplitPage ? undefined : title}
+      description={
+        isSplitPage ? undefined : (description ?? PAGE_DESCRIPTIONS[title])
+      }
+      fullHeight={isSplitPage}
     >
       <ItemWorkspace
         workspaceId={workspaceId}
         type={type}
+        types={types}
         status={status}
         title={title}
         emptyDescription={emptyDescription}
         favoritesOnly={favoritesOnly}
+        projectId={projectId}
+        collectionId={collectionId}
         initialItems={initialItems}
       />
     </PageShell>

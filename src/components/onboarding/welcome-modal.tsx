@@ -1,8 +1,16 @@
 "use client";
 
-import { Button, Modal } from "antd";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { BRAND_NAME } from "@/lib/brand";
 import { dismissWelcome, isWelcomeDismissed } from "@/lib/onboarding-storage";
 
 export function WelcomeModal() {
@@ -21,30 +29,38 @@ export function WelcomeModal() {
   }
 
   return (
-    <Modal
+    <Dialog
       open={open}
-      title="Welcome to Knowledge Vault"
-      onCancel={close}
-      footer={[
-        <Button key="explore" onClick={close}>
-          Explore on my own
-        </Button>,
-        <Button
-          key="create"
-          type="primary"
-          onClick={() => {
-            close();
-            router.push("/dashboard/notes?new=1");
-          }}
-        >
-          Create your first note
-        </Button>,
-      ]}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) close();
+      }}
     >
-      <p className="text-[var(--muted)] leading-relaxed">
-        Store notes, code snippets, terminal commands, bookmarks, and prompts in
-        one secure workspace. Use <kbd>Ctrl+K</kbd> to search anything instantly.
-      </p>
-    </Modal>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Welcome to {BRAND_NAME}</DialogTitle>
+        </DialogHeader>
+        <p className="welcome-modal-text">
+          This is your place to save ideas, notes, links, and projects. You can
+          write notes, save useful websites, store code, and keep everything
+          organised.
+        </p>
+        <p className="welcome-modal-text">
+          Everything you save stays private and only you can see it.
+        </p>
+        <DialogFooter>
+          <Button variant="secondary" onClick={close}>
+            I&apos;ll look around first
+          </Button>
+          <Button
+            onClick={() => {
+              close();
+              router.push("/dashboard/notes?new=1");
+            }}
+          >
+            Write my first note
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

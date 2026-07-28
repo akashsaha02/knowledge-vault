@@ -1,6 +1,6 @@
 "use server";
 
-import { createShareLink, revokeShareLink } from "@/features/sharing/share.service";
+import { createShareLink, revokeShareLink, unlockShareLink } from "@/features/sharing/share.service";
 import { requireUser } from "@/lib/session";
 
 export async function createShareLinkAction(
@@ -26,4 +26,8 @@ export async function revokeShareLinkAction(
 ) {
   const user = await requireUser();
   return revokeShareLink(user.id, workspaceId, shareLinkId);
+}
+
+export async function unlockShareLinkAction(token: string, password: string) {
+  return unlockShareLink(token, password);
 }

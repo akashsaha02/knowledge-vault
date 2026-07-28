@@ -3,6 +3,7 @@ import "server-only";
 import {
   createProject,
   deleteProject,
+  findProjectById,
   findProjects,
   updateProject,
 } from "@/features/projects/project.repository";
@@ -14,6 +15,16 @@ import { db } from "@/lib/db";
 export async function listProjects(userId: string, workspaceId: string) {
   await requireWorkspacePermission(userId, workspaceId, "view");
   return findProjects(workspaceId);
+}
+
+export async function getProjectForUser(
+  userId: string,
+  workspaceId: string,
+  projectId: string,
+) {
+  await requireWorkspacePermission(userId, workspaceId, "view");
+  await requireProjectInWorkspace(workspaceId, projectId);
+  return findProjectById(projectId);
 }
 
 export async function createProjectForUser(
