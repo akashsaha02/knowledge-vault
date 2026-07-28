@@ -27,7 +27,7 @@ export default defineConfig({
       BETTER_AUTH_SECRET:
         process.env.BETTER_AUTH_SECRET ?? "development-secret-change-me",
       BETTER_AUTH_URL:
-        process.env.BETWRIGHT_BASE_URL ??
+        process.env.PLAYWRIGHT_BASE_URL ??
         process.env.BETTER_AUTH_URL ??
         "http://localhost:8000",
       NEXT_PUBLIC_APP_URL:

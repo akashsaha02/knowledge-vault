@@ -13,7 +13,7 @@ export async function createTagForUser(
   userId: string,
   workspaceId: string,
   name: string,
-  color?: string,
+  _color?: string,
 ) {
   await requireWorkspacePermission(userId, workspaceId, "create");
   const slug = slugify(name);

@@ -41,11 +41,11 @@ import { ItemDetailSkeleton, ItemGridSkeleton, ItemListSkeleton } from "@/compon
 import { DetailsSidePanel } from "@/components/ui/details-side-panel";
 import { FriendlyConfirmDialog } from "@/components/ui/friendly-confirm-dialog";
 import type { ItemType, ItemStatus } from "@/generated/prisma/client";
-import { TYPE_ROUTES, getItemHref } from "@/lib/nav-config";
+import { getItemHref } from "@/lib/nav-config";
 import { completeChecklistTask } from "@/lib/onboarding-storage";
 import { addRecentItem } from "@/lib/recent-storage";
 import { getItemChecked, getNoteColor, withItemChecked, withNoteColor } from "@/lib/item-metadata";
-import { getNoteColorStyle, readLastNoteColor, saveLastNoteColor, type NoteColorId } from "@/lib/note-colors";
+import { readLastNoteColor, saveLastNoteColor, type NoteColorId } from "@/lib/note-colors";
 import { NoteColorPicker } from "@/components/items/note-color-picker";
 import { WorkspaceSplitLayout } from "@/components/items/workspace-split-layout";
 import { useUiStore } from "@/stores/ui-store";

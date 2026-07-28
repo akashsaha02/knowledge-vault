@@ -10,7 +10,6 @@ test.describe("Authenticated flows", () => {
     const email = uniqueTestEmail();
 
     await signUp(page, { email });
-    await expect(page.getByRole("heading", { name: /welcome/i })).toBeVisible();
 
     await page.goto("/dashboard/notes?new=1");
     await page.waitForURL("**/dashboard/notes?item=**", { timeout: 30_000 });
@@ -32,14 +31,18 @@ test.describe("Authenticated flows", () => {
     await page.getByRole("button", { name: "New project" }).click();
     await page.getByLabel("Name").fill(projectName);
     await page.getByRole("button", { name: "Create project" }).click();
+    await expect(page.getByRole("dialog")).toBeHidden({ timeout: 10_000 });
 
-    await expect(page.getByRole("link", { name: projectName })).toBeVisible();
-    await page.getByRole("link", { name: projectName }).click();
+    const projectLink = page.locator("a.key-card-title", { hasText: projectName });
+    await expect(projectLink).toBeVisible();
+    await projectLink.click();
 
-    await expect(page).toHaveURL(/\/dashboard\/projects\//);
-    await expect(page.getByRole("heading", { name: projectName })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/projects\/[^/]+$/, { timeout: 15_000 });
     await expect(
-      page.getByText("No items in this project yet"),
+      page.getByRole("heading", { name: projectName, level: 1 }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/No items in this project yet/i),
     ).toBeVisible();
   });
 

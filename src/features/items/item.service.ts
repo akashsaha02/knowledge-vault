@@ -21,7 +21,7 @@ import {
 } from "@/features/workspaces/workspace.service";
 import { validateItemReferences } from "@/features/workspaces/workspace-resources";
 import { uniqueSlug } from "@/lib/slug";
-import type { ItemStatus, ItemType, Prisma } from "@/generated/prisma/client";
+import type { ItemStatus, Prisma } from "@/generated/prisma/client";
 import type { ItemListFilters } from "@/features/items/item.types";
 
 async function resolveUniqueSlug(workspaceId: string, title: string) {
