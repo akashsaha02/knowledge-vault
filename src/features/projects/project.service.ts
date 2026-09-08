@@ -5,12 +5,11 @@ import {
   deleteProject,
   findProjectById,
   findProjects,
-  updateProject,
+  slugExists,
 } from "@/features/projects/project.repository";
 import { requireProjectInWorkspace } from "@/features/workspaces/workspace-resources";
 import { requireWorkspacePermission } from "@/features/workspaces/workspace.service";
 import { slugify, uniqueSlug } from "@/lib/slug";
-import { db } from "@/lib/db";
 
 export async function listProjects(userId: string, workspaceId: string) {
   await requireWorkspacePermission(userId, workspaceId, "view");
@@ -37,11 +36,7 @@ export async function createProjectForUser(
   const baseSlug = slugify(name);
   let slug = baseSlug;
   let counter = 1;
-  while (
-    await db.project.findUnique({
-      where: { workspaceId_slug: { workspaceId, slug } },
-    })
-  ) {
+  while (await slugExists(workspaceId, slug)) {
     slug = uniqueSlug(name, String(counter++));
   }
 
@@ -51,17 +46,6 @@ export async function createProjectForUser(
     description,
     workspace: { connect: { id: workspaceId } },
   });
-}
-
-export async function updateProjectForUser(
-  userId: string,
-  workspaceId: string,
-  projectId: string,
-  data: { name?: string; description?: string; color?: string },
-) {
-  await requireWorkspacePermission(userId, workspaceId, "editAll");
-  await requireProjectInWorkspace(workspaceId, projectId);
-  return updateProject(projectId, data);
 }
 
 export async function deleteProjectForUser(

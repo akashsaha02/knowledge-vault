@@ -1,12 +1,9 @@
-import type { Item, ItemStatus, ItemType, Prisma } from "@/generated/prisma/client";
-
-export type ItemWithTags = Item & {
-  tags: { tag: { id: string; name: string; slug: string; color: string | null } }[];
-};
+import type { ItemStatus, ItemType } from "@/generated/prisma/client";
 
 export type ItemListFilters = {
   workspaceId: string;
   userId?: string;
+  canSeeOthersPrivateItems?: boolean;
   type?: ItemType;
   types?: ItemType[];
   status?: ItemStatus;
@@ -18,6 +15,3 @@ export type ItemListFilters = {
   offset?: number;
   favoritesOnly?: boolean;
 };
-
-export type ItemCreateData = Prisma.ItemCreateInput;
-export type ItemUpdateData = Prisma.ItemUpdateInput;

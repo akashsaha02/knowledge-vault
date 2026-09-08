@@ -12,6 +12,7 @@ type DashboardShellProps = {
   userName: string;
   workspaceId: string;
   workspaceName: string;
+  workspaceCount?: number;
 };
 
 export function DashboardShell({
@@ -19,6 +20,7 @@ export function DashboardShell({
   userName,
   workspaceId,
   workspaceName,
+  workspaceCount = 1,
 }: DashboardShellProps) {
   return (
     <div className="dashboard-app">
@@ -29,6 +31,7 @@ export function DashboardShell({
             userName={userName}
             workspaceId={workspaceId}
             workspaceName={workspaceName}
+            workspaceCount={workspaceCount}
           />
           <main id="main-content" className="dashboard-content" tabIndex={-1}>
             {children}

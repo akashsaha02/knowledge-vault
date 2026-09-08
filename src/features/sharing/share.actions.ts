@@ -1,22 +1,18 @@
 "use server";
 
+import { createShareLinkSchema } from "@/features/sharing/share.schema";
 import { createShareLink, revokeShareLink, unlockShareLink } from "@/features/sharing/share.service";
 import { requireUser } from "@/lib/session";
 
-export async function createShareLinkAction(
-  workspaceId: string,
-  options: {
-    itemId?: string;
-    expiresAt?: string;
-    password?: string;
-    allowCopy?: boolean;
-    allowDownload?: boolean;
-  },
-) {
+export async function createShareLinkAction(input: unknown) {
   const user = await requireUser();
-  return createShareLink(user.id, workspaceId, {
-    ...options,
-    expiresAt: options.expiresAt ? new Date(options.expiresAt) : undefined,
+  const parsed = createShareLinkSchema.parse(input);
+  return createShareLink(user.id, parsed.workspaceId, {
+    itemId: parsed.itemId,
+    expiresAt: parsed.expiresAt ? new Date(parsed.expiresAt) : undefined,
+    password: parsed.password,
+    allowCopy: parsed.allowCopy,
+    allowDownload: parsed.allowDownload,
   });
 }
 

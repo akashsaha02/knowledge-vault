@@ -5,7 +5,7 @@ export default function PromptsPage() {
     <DashboardItemPage
       type="PROMPT"
       title="AI Prompts"
-      emptyDescription="Save prompts you use with AI tools"
+      emptyDescription="Save prompts you reuse with AI tools."
     />
   );
 }

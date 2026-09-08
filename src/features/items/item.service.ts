@@ -1,19 +1,28 @@
 import "server-only";
 
 import {
+  canSeeOthersPrivateItems,
+  itemIsVisibleToUser,
+} from "@/features/items/item-access";
+import {
+  canPermanentlyDeleteItem,
+  nextStatusAfterDraftEdit,
+  shouldCreateRevision,
+} from "@/features/items/item-lifecycle";
+import {
   createItem,
   createRevision,
   findItemById,
   findItems,
   findRevisions,
   hardDeleteItem,
+  searchItemsFullText,
   slugExists,
   restoreDeletedItem,
   softDeleteItem,
   updateItem,
 } from "@/features/items/item.repository";
-import type { CreateItemInput, UpdateItemInput } from "@/features/items/item.schema";
-import { hasPermission } from "@/features/workspaces/workspace.permissions";
+import type { CreateItemInput, UpdateItemInput, SearchItemsInput } from "@/features/items/item.schema";
 import {
   canEditItem,
   requireWorkspaceMember,
@@ -37,8 +46,48 @@ export async function listAccessibleItems(
   userId: string,
   filters: ItemListFilters,
 ) {
-  await requireWorkspaceMember(userId, filters.workspaceId);
-  return findItems({ ...filters, userId });
+  const member = await requireWorkspaceMember(userId, filters.workspaceId);
+  return findItems({
+    ...filters,
+    userId,
+    canSeeOthersPrivateItems: canSeeOthersPrivateItems(member.role),
+  });
+}
+
+export async function searchAccessibleItems(
+  userId: string,
+  input: SearchItemsInput,
+  useFullText = false,
+) {
+  const member = await requireWorkspaceMember(userId, input.workspaceId);
+  const canSeePrivate = canSeeOthersPrivateItems(member.role);
+
+  if (useFullText && input.query?.trim() && !input.projectId && !input.tagId) {
+    try {
+      return await searchItemsFullText(input.workspaceId, input.query, {
+        type: input.type,
+        status: input.status,
+        userId,
+        canSeeOthersPrivateItems: canSeePrivate,
+      });
+    } catch {
+      // Fall back to simple search if FTS is unavailable
+    }
+  }
+
+  return findItems({
+    workspaceId: input.workspaceId,
+    userId,
+    canSeeOthersPrivateItems: canSeePrivate,
+    query: input.query,
+    type: input.type,
+    status: input.status,
+    projectId: input.projectId,
+    collectionId: input.collectionId,
+    tagId: input.tagId,
+    limit: input.limit,
+    offset: input.offset,
+  });
 }
 
 export async function getAccessibleItem(
@@ -47,19 +96,18 @@ export async function getAccessibleItem(
   itemId: string,
   options?: { includeTrashed?: boolean },
 ) {
-  await requireWorkspaceMember(userId, workspaceId);
+  const member = await requireWorkspaceMember(userId, workspaceId);
   const item = await findItemById(itemId);
   if (!item || item.workspaceId !== workspaceId) {
     throw new Error("Item not found");
   }
   if (
-    item.visibility === "PRIVATE" &&
-    item.createdById !== userId
+    !itemIsVisibleToUser(item, {
+      userId,
+      canSeeOthersPrivateItems: canSeeOthersPrivateItems(member.role),
+    })
   ) {
-    const member = await requireWorkspaceMember(userId, workspaceId);
-    if (!hasPermission(member.role, "editAll")) {
-      throw new Error("Item not found");
-    }
+    throw new Error("Item not found");
   }
   if (item.deletedAt && !options?.includeTrashed) {
     throw new Error("Item not found");
@@ -135,13 +183,13 @@ export async function updateItemForUser(
 
   const resolvedStatus =
     input.status ??
-    (existing.status === "DRAFT" &&
-    (input.title !== undefined ||
-      input.content !== undefined ||
-      input.plainText !== undefined ||
-      input.metadata !== undefined)
-      ? ("ACTIVE" as const)
-      : undefined);
+    nextStatusAfterDraftEdit(
+      existing.status,
+      input.title !== undefined ||
+        input.content !== undefined ||
+        input.plainText !== undefined ||
+        input.metadata !== undefined,
+    );
 
   await validateItemReferences(input.workspaceId, {
     projectId: input.projectId,
@@ -163,9 +211,6 @@ export async function updateItemForUser(
     ...(input.visibility !== undefined && { visibility: input.visibility }),
     ...(input.isPinned !== undefined && { isPinned: input.isPinned }),
     ...(input.isFavorite !== undefined && { isFavorite: input.isFavorite }),
-    ...(input.metadata !== undefined && {
-      metadata: input.metadata as Prisma.InputJsonValue,
-    }),
     ...(input.projectId !== undefined && {
       project: input.projectId
         ? { connect: { id: input.projectId } }
@@ -188,13 +233,13 @@ export async function updateItemForUser(
 
   if (input.content !== undefined || input.plainText !== undefined) {
     const lastRevision = (await findRevisions(input.id))[0];
-    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-    const shouldCreateRevision =
-      !lastRevision ||
-      lastRevision.createdAt.getTime() < fiveMinutesAgo ||
-      lastRevision.plainText !== (input.plainText ?? existing.plainText);
-
-    if (shouldCreateRevision) {
+    const nextPlainText = input.plainText ?? existing.plainText;
+    if (
+      shouldCreateRevision({
+        lastRevision,
+        nextPlainText,
+      })
+    ) {
       await createRevision({
         itemId: input.id,
         createdById: userId,
@@ -261,7 +306,7 @@ export async function permanentlyDeleteItem(
     throw new Error("Insufficient permissions");
   }
 
-  if (existing.status !== "TRASHED" || !existing.deletedAt) {
+  if (!canPermanentlyDeleteItem(existing)) {
     throw new Error("Item must be in trash before permanent deletion");
   }
 

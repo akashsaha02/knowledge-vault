@@ -8,7 +8,7 @@ export default function NotesPage() {
       <DashboardItemPage
         type="NOTE"
         title="Notes"
-        emptyDescription="Write something you want to remember"
+        emptyDescription="Capture your first thought."
       />
     </Suspense>
   );

@@ -3,57 +3,39 @@
 import {
   ArrowLeft,
   Grid3x3,
-  History,
   List,
   Loader2,
-  Paperclip,
   Plus,
   Search,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  archiveItemAction,
-  createItemAction,
-  listItemsAction,
-  permanentlyDeleteItemAction,
-  restoreItemAction,
-  trashItemAction,
-  updateItemAction,
-} from "@/features/items/item.actions";
-import { NoteEditor } from "@/components/editor/note-editor";
-import { SnippetEditor } from "@/components/items/snippet-editor";
-import { CommandEditor } from "@/components/items/command-editor";
-import { PromptEditor } from "@/components/items/prompt-editor";
-import { BookmarkEditor } from "@/components/items/bookmark-editor";
-import { AttachmentUploader } from "@/components/items/attachment-uploader";
 import { ItemListCard } from "@/components/items/item-list-card";
 import { ItemDetailToolbar } from "@/components/items/item-detail-toolbar";
-import { MetadataPanel } from "@/components/items/metadata-panel";
-import { RevisionHistory } from "@/components/items/revision-history";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ContentFade } from "@/components/ui/content-fade";
 import { ItemDetailSkeleton, ItemGridSkeleton, ItemListSkeleton } from "@/components/ui/loading-skeleton";
-import { DetailsSidePanel } from "@/components/ui/details-side-panel";
-import { FriendlyConfirmDialog } from "@/components/ui/friendly-confirm-dialog";
-import type { ItemType, ItemStatus } from "@/generated/prisma/client";
-import { getItemHref } from "@/lib/nav-config";
-import { completeChecklistTask } from "@/lib/onboarding-storage";
-import { addRecentItem } from "@/lib/recent-storage";
-import { getItemChecked, getNoteColor, withItemChecked, withNoteColor } from "@/lib/item-metadata";
-import { readLastNoteColor, saveLastNoteColor, type NoteColorId } from "@/lib/note-colors";
 import { NoteColorPicker } from "@/components/items/note-color-picker";
 import { WorkspaceSplitLayout } from "@/components/items/workspace-split-layout";
-import { useUiStore } from "@/stores/ui-store";
-
-const PAGE_SIZE = 50;
-const SPLIT_ITEM_TYPES = ["NOTE", "SNIPPET", "COMMAND", "PROMPT"] as const satisfies readonly ItemType[];
-
-type ItemRecord = Awaited<ReturnType<typeof listItemsAction>>[number];
+import { ItemTypeEditor } from "@/components/items/item-type-editor";
+import { CodeTypeTabs } from "@/components/items/code-type-tabs";
+import { ItemDeleteDialogs } from "@/features/items/components/item-delete-dialogs";
+import { ItemOrganizePanel } from "@/features/items/components/item-organize-panel";
+import {
+  useItemWorkspace,
+  type ItemRecord,
+} from "@/features/items/hooks/use-item-workspace";
+import { getNoteColor } from "@/features/items/item-metadata";
+import { ShareItemDialog } from "@/features/sharing/components/share-item-dialog";
+import { toast } from "sonner";
+import {
+  archiveItemAction,
+  restoreItemAction,
+  trashItemAction,
+} from "@/features/items/item.actions";
+import { getActionErrorMessage } from "@/lib/action-error";
+import type { ItemStatus, ItemType } from "@/generated/prisma/client";
 
 type ItemWorkspaceProps = {
   workspaceId: string;
@@ -80,328 +62,38 @@ export function ItemWorkspace({
   collectionId,
   initialItems,
 }: ItemWorkspaceProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const itemId = searchParams.get("item");
-  const isDetailView = Boolean(itemId);
-  const codeTab = searchParams.get("tab") === "commands" ? "commands" : "snippets";
-  const activeType: ItemType | undefined =
-    type ??
-    (types?.length
-      ? codeTab === "commands"
-        ? "COMMAND"
-        : "SNIPPET"
-      : undefined);
+  const ws = useItemWorkspace({
+    workspaceId,
+    type,
+    types,
+    status,
+    title,
+    favoritesOnly,
+    projectId,
+    collectionId,
+    initialItems,
+  });
 
-  const [items, setItems] = useState<ItemRecord[]>(initialItems ?? []);
-  const [selected, setSelected] = useState<ItemRecord | null>(null);
-  const [loading, setLoading] = useState(!initialItems);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(
-    initialItems ? initialItems.length >= PAGE_SIZE : true,
-  );
-  const [filter, setFilter] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] = useState(false);
-  const [cardDeleteTarget, setCardDeleteTarget] = useState<ItemRecord | null>(null);
-  const setSelectedItemId = useUiStore((s) => s.setSelectedItemId);
-  const setSelectedItemTitle = useUiStore((s) => s.setSelectedItemTitle);
-  const [isMobile, setIsMobile] = useState(false);
-  const [createNoteColor, setCreateNoteColor] = useState<NoteColorId>("cream");
-  const isNotesPage = type === "NOTE";
-
-  useEffect(() => {
-    setCreateNoteColor(readLastNoteColor());
-  }, []);
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 768px)");
-    const update = () => setIsMobile(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-
-  const loadItems = useCallback(
-    async (append = false, currentLength = 0) => {
-      if (append) setLoadingMore(true);
-      else setLoading(true);
-
-      try {
-        const data = await listItemsAction({
-          workspaceId,
-          type,
-          types,
-          status,
-          favoritesOnly,
-          projectId,
-          collectionId,
-          limit: PAGE_SIZE,
-          offset: append ? currentLength : 0,
-        });
-
-        setHasMore(data.length >= PAGE_SIZE);
-        setItems((prev) => (append ? [...prev, ...data] : data));
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [workspaceId, type, types, status, favoritesOnly, projectId, collectionId],
-  );
-
-  useEffect(() => {
-    if (!initialItems) {
-      void loadItems();
+  function renderCreateNoteColorPicker(compact = false) {
+    if (!ws.isNotesPage || !ws.canCreate) return null;
+    if (compact) {
+      return (
+        <details className="workspace-sidebar-extras">
+          <summary className="workspace-sidebar-extras-summary">Default color</summary>
+          <NoteColorPicker value={ws.createNoteColor} onChange={ws.handleCreateNoteColorChange} />
+        </details>
+      );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId, type, types, status, favoritesOnly, projectId, collectionId]);
-
-  useEffect(() => {
-    if (!itemId) {
-      setSelected(null);
-      setSelectedItemId(null);
-      setSelectedItemTitle(null);
-      return;
-    }
-
-    const found = items.find((item) => item.id === itemId);
-    if (found) {
-      setSelected((prev) => {
-        if (!prev || prev.id !== found.id) return found;
-        return {
-          ...found,
-          content: prev.content,
-          plainText: prev.plainText,
-        };
-      });
-      setSelectedItemId(found.id);
-      setSelectedItemTitle(found.title || "Untitled");
-    }
-  }, [itemId, items, setSelectedItemId, setSelectedItemTitle]);
-
-  useEffect(() => {
-    if (searchParams.get("new") && activeType) {
-      void handleCreate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, activeType]);
-
-  const filteredItems = useMemo(() => {
-    const query = filter.trim().toLowerCase();
-    let list = items;
-    if (types?.length) {
-      const targetType = codeTab === "commands" ? "COMMAND" : "SNIPPET";
-      list = list.filter((item) => item.type === targetType);
-    }
-    if (!query) return list;
-    return list.filter(
-      (item) =>
-        item.title.toLowerCase().includes(query) ||
-        (item.plainText?.toLowerCase().includes(query) ?? false),
+    return (
+      <div className="note-color-row create-note-color-row">
+        <span className="note-color-label">New note color</span>
+        <NoteColorPicker value={ws.createNoteColor} onChange={ws.handleCreateNoteColorChange} />
+      </div>
     );
-  }, [items, filter, types, codeTab]);
-
-  const pinnedItems = filteredItems.filter((item) => item.isPinned);
-  const otherItems = filteredItems.filter((item) => !item.isPinned);
-  const canCreate =
-    (Boolean(activeType) || status === "DRAFT") &&
-    status !== "TRASHED" &&
-    status !== "ARCHIVED" &&
-    !favoritesOnly;
-  const splitLayout =
-    status === "ACTIVE" &&
-    !favoritesOnly &&
-    !isMobile &&
-    (Boolean(type && SPLIT_ITEM_TYPES.includes(type as (typeof SPLIT_ITEM_TYPES)[number])) ||
-      Boolean(types?.length));
-
-  const itemLabel = type === "NOTE"
-    ? "note"
-    : type === "PROMPT"
-      ? "prompt"
-      : types?.length
-        ? codeTab === "commands"
-          ? "command"
-          : "snippet"
-        : title.replace(/s$/, "").toLowerCase();
-
-  function getCreateLabel() {
-    if (type === "NOTE") return "New note";
-    if (type === "PROMPT") return "New prompt";
-    if (types?.length) return codeTab === "commands" ? "New command" : "New snippet";
-    return `New ${itemLabel}`;
-  }
-
-  function openItem(item: ItemRecord) {
-    const href = getItemHref(item.type, item.id);
-    addRecentItem({
-      id: item.id,
-      title: item.title,
-      type: item.type,
-      href,
-    });
-    router.push(href);
-  }
-
-  function closeDetail() {
-    router.push(pathname);
-  }
-
-  async function handleCreate() {
-    const createType = activeType ?? "NOTE";
-    const defaultTitle =
-      createType === "SNIPPET"
-        ? "Untitled code"
-        : createType === "COMMAND"
-          ? "Untitled command"
-          : createType === "BOOKMARK"
-            ? "Untitled link"
-            : createType === "PROMPT"
-              ? "Untitled prompt"
-              : "Untitled note";
-
-    const item = await createItemAction({
-      workspaceId,
-      type: createType,
-      title: defaultTitle,
-      plainText: "",
-      ...(status === "DRAFT" ? { status: "DRAFT" as const } : {}),
-      metadata:
-        createType === "SNIPPET"
-          ? { language: "typescript", code: "" }
-          : createType === "COMMAND"
-            ? { shell: "bash", command: "" }
-            : createType === "BOOKMARK"
-              ? { url: "" }
-              : createType === "PROMPT"
-                ? { template: "" }
-                : createType === "NOTE"
-                  ? withNoteColor({}, createNoteColor)
-                  : undefined,
-    });
-
-    if (createType === "NOTE") completeChecklistTask("note");
-    if (createType === "SNIPPET") completeChecklistTask("snippet");
-    if (createType === "BOOKMARK") completeChecklistTask("bookmark");
-
-    setItems((prev) => [item as ItemRecord, ...prev]);
-    router.replace(getItemHref(item.type as ItemType, item.id));
-  }
-
-  async function handleSave(json: unknown, plainText: string) {
-    if (!selected) return;
-    const updated = await updateItemAction({
-      id: selected.id,
-      workspaceId,
-      content: json,
-      plainText,
-    });
-    const record = updated as ItemRecord;
-    setItems((prev) => prev.map((i) => (i.id === record.id ? record : i)));
-    setSelected((prev) => {
-      if (!prev || prev.id !== record.id) return prev;
-      return { ...prev, updatedAt: record.updatedAt };
-    });
-  }
-
-  function syncItem(updated: ItemRecord, options?: { preserveEditor?: boolean }) {
-    setSelected((prev) => {
-      if (!prev || prev.id !== updated.id) return prev;
-      if (!options?.preserveEditor) return updated;
-      return {
-        ...updated,
-        content: prev.content,
-        plainText: prev.plainText,
-      };
-    });
-    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-  }
-
-  async function handlePermanentDelete(item: ItemRecord) {
-    await permanentlyDeleteItemAction(workspaceId, item.id);
-    toast.success("Permanently deleted");
-    if (selected?.id === item.id) {
-      closeDetail();
-    }
-    void loadItems();
-  }
-
-  async function handleCardPin(item: ItemRecord) {
-    const updated = await updateItemAction({
-      id: item.id,
-      workspaceId,
-      isPinned: !item.isPinned,
-    });
-    syncItem(updated as ItemRecord, { preserveEditor: true });
-    toast.success(item.isPinned ? "Unpinned" : "Pinned");
-  }
-
-  async function handleCardFavorite(item: ItemRecord) {
-    const updated = await updateItemAction({
-      id: item.id,
-      workspaceId,
-      isFavorite: !item.isFavorite,
-    });
-    syncItem(updated as ItemRecord, { preserveEditor: true });
-    toast.success(item.isFavorite ? "Removed from bookmarks" : "Bookmarked");
-  }
-
-  async function handleCardArchive(item: ItemRecord) {
-    await archiveItemAction(workspaceId, item.id);
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    if (itemId === item.id) closeDetail();
-    toast.success("Archived");
-  }
-
-  async function handleCardRestore(item: ItemRecord) {
-    await restoreItemAction(workspaceId, item.id);
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    if (itemId === item.id) closeDetail();
-    toast.success("Restored");
-  }
-
-  async function handleCardDelete(item: ItemRecord) {
-    await trashItemAction(workspaceId, item.id);
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    if (itemId === item.id) closeDetail();
-    toast.success("Moved to Trash");
-    setCardDeleteTarget(null);
-  }
-
-  async function updateSelectedField(
-    fields: Partial<
-      Pick<ItemRecord, "title" | "isPinned" | "isFavorite" | "projectId" | "collectionId"> & {
-        tagIds?: string[];
-        content?: unknown;
-        plainText?: string;
-        metadata?: unknown;
-      }
-    >,
-  ) {
-    if (!selected) return;
-    const updated = await updateItemAction({
-      id: selected.id,
-      workspaceId,
-      ...fields,
-    });
-    const preserveEditor = fields.content === undefined && fields.plainText === undefined;
-    syncItem(updated as ItemRecord, { preserveEditor });
-  }
-
-  async function handleCardCheck(item: ItemRecord, checked: boolean) {
-    const updated = await updateItemAction({
-      id: item.id,
-      workspaceId,
-      metadata: withItemChecked(item.metadata, checked),
-    });
-    syncItem(updated as ItemRecord, { preserveEditor: true });
   }
 
   function renderCard(item: ItemRecord) {
-    const isChecked = getItemChecked(item.metadata);
+    const isChecked = ws.getItemChecked(item.metadata);
     return (
       <ItemListCard
         key={item.id}
@@ -412,54 +104,28 @@ export function ItemWorkspace({
         isPinned={item.isPinned}
         isFavorite={item.isFavorite}
         isChecked={isChecked}
-        isActive={itemId === item.id}
-        variant={splitLayout ? "sidebar" : "card"}
+        isActive={ws.itemId === item.id}
+        variant={ws.splitLayout ? "sidebar" : "card"}
         noteColorId={item.type === "NOTE" ? getNoteColor(item.metadata) : undefined}
-        onClick={() => openItem(item)}
+        onClick={() => ws.openItem(item)}
         onCheckChange={
           status === "TRASHED"
             ? undefined
-            : (checked) => void handleCardCheck(item, checked)
+            : (checked) => void ws.handleCardCheck(item, checked)
         }
-        onPin={status === "ACTIVE" ? () => void handleCardPin(item) : undefined}
-        onFavorite={() => void handleCardFavorite(item)}
-        onArchive={status === "ACTIVE" ? () => void handleCardArchive(item) : undefined}
-        onRestore={status === "TRASHED" ? () => void handleCardRestore(item) : undefined}
+        onPin={status === "ACTIVE" ? () => void ws.handleCardPin(item) : undefined}
+        onFavorite={() => void ws.handleCardFavorite(item)}
+        onArchive={status === "ACTIVE" ? () => void ws.handleCardArchive(item) : undefined}
+        onRestore={status === "TRASHED" ? () => void ws.handleCardRestore(item) : undefined}
         onDelete={
-          status !== "TRASHED" ? () => setCardDeleteTarget(item) : undefined
+          status !== "TRASHED" ? () => ws.setCardDeleteTarget(item) : undefined
         }
         onPermanentDelete={
           status === "TRASHED"
-            ? () => void handlePermanentDelete(item)
+            ? () => void ws.handlePermanentDelete(item)
             : undefined
         }
       />
-    );
-  }
-
-  const tagIds =
-    selected?.tags?.map((entry: { tag: { id: string } }) => entry.tag.id) ?? [];
-
-  function handleCreateNoteColorChange(colorId: NoteColorId) {
-    setCreateNoteColor(colorId);
-    saveLastNoteColor(colorId);
-  }
-
-  function renderCreateNoteColorPicker(compact = false) {
-    if (!isNotesPage || !canCreate) return null;
-    if (compact) {
-      return (
-        <details className="workspace-sidebar-extras">
-          <summary className="workspace-sidebar-extras-summary">Default color</summary>
-          <NoteColorPicker value={createNoteColor} onChange={handleCreateNoteColorChange} />
-        </details>
-      );
-    }
-    return (
-      <div className="note-color-row create-note-color-row">
-        <span className="note-color-label">New note color</span>
-        <NoteColorPicker value={createNoteColor} onChange={handleCreateNoteColorChange} />
-      </div>
     );
   }
 
@@ -468,40 +134,21 @@ export function ItemWorkspace({
       <aside className="item-workspace-list" aria-label={`${title} list`}>
         <div className="item-workspace-list-header">
           {types?.length ? (
-            <div className="view-toggle code-page-tabs" role="tablist" aria-label="Code type">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={codeTab === "snippets"}
-                className={`view-toggle-btn${codeTab === "snippets" ? " view-toggle-btn--active" : ""}`}
-                onClick={() => setCodeTab("snippets")}
-              >
-                Snippets
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={codeTab === "commands"}
-                className={`view-toggle-btn${codeTab === "commands" ? " view-toggle-btn--active" : ""}`}
-                onClick={() => setCodeTab("commands")}
-              >
-                Commands
-              </button>
-            </div>
+            <CodeTypeTabs value={ws.codeTab} onChange={ws.setCodeTab} />
           ) : null}
           <div className="workspace-list-toolbar">
-            {canCreate ? (
-              <Button onClick={() => void handleCreate()} size="sm" className="workspace-new-btn">
+            {ws.canCreate ? (
+              <Button onClick={() => void ws.handleCreate()} size="sm" className="workspace-new-btn">
                 <Plus className="h-4 w-4" />
-                {getCreateLabel()}
+                {ws.getCreateLabel()}
               </Button>
             ) : null}
             <div className="relative workspace-list-search">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
               <Input
                 placeholder={`Search ${title.toLowerCase()}...`}
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                value={ws.filter}
+                onChange={(e) => ws.setFilter(e.target.value)}
                 aria-label={`Search ${title.toLowerCase()}`}
                 className="pl-9 h-9"
               />
@@ -510,41 +157,41 @@ export function ItemWorkspace({
           {renderCreateNoteColorPicker(true)}
         </div>
         <div className="item-workspace-list-scroll">
-          {loading ? (
+          {ws.loading ? (
             <ItemListSkeleton rows={8} />
-          ) : filteredItems.length === 0 ? (
+          ) : ws.filteredItems.length === 0 ? (
             <div className="item-workspace-list-empty">
               <p>{emptyDescription}</p>
-              {canCreate ? (
-                <Button variant="link" onClick={() => void handleCreate()}>
-                  Create your first {itemLabel}
+              {ws.canCreate ? (
+                <Button variant="link" onClick={() => void ws.handleCreate()}>
+                  Create your first {ws.itemLabel}
                 </Button>
               ) : null}
             </div>
           ) : (
             <div className="item-workspace-list-view item-workspace-sidebar-rows">
-              {pinnedItems.length > 0 ? (
+              {ws.pinnedItems.length > 0 ? (
                 <section className="item-list-section">
                   <p className="item-list-section-label">Pinned</p>
-                  {pinnedItems.map(renderCard)}
+                  {ws.pinnedItems.map(renderCard)}
                 </section>
               ) : null}
-              {otherItems.length > 0 ? (
+              {ws.otherItems.length > 0 ? (
                 <section className="item-list-section">
-                  {pinnedItems.length > 0 ? (
+                  {ws.pinnedItems.length > 0 ? (
                     <p className="item-list-section-label">All {title.toLowerCase()}</p>
                   ) : null}
-                  {otherItems.map(renderCard)}
+                  {ws.otherItems.map(renderCard)}
                 </section>
               ) : null}
-              {hasMore && !filter ? (
+              {ws.hasMore && !ws.filter ? (
                 <Button
                   variant="outline"
                   className="w-full item-workspace-list-load-more"
-                  disabled={loadingMore}
-                  onClick={() => void loadItems(true, items.length)}
+                  disabled={ws.loadingMore}
+                  onClick={() => void ws.loadItems(true, ws.items.length)}
                 >
-                  {loadingMore ? (
+                  {ws.loadingMore ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : null}
                   Load more
@@ -558,11 +205,11 @@ export function ItemWorkspace({
   }
 
   function renderItemEditor(showBack: boolean) {
-    if (itemId && loading && !selected) {
+    if (ws.itemId && ws.loading && !ws.selected) {
       return <ItemDetailSkeleton />;
     }
 
-    if (itemId && !loading && !selected) {
+    if (ws.itemId && !ws.loading && !ws.selected) {
       return (
         <div className="item-workspace-empty workspace-empty-pane">
           <EmptyState
@@ -571,25 +218,25 @@ export function ItemWorkspace({
             description="It may have been deleted or moved."
             primaryAction={{
               label: `Back to ${title.toLowerCase()}`,
-              onClick: closeDetail,
+              onClick: ws.closeDetail,
             }}
           />
         </div>
       );
     }
 
-    if (!selected) {
+    if (!ws.selected) {
       return (
         <div className="item-workspace-empty workspace-empty-pane">
           <EmptyState
             className="workspace-empty-state"
-            title={`Select a ${itemLabel}`}
-            description={`Choose a ${itemLabel} from the sidebar or start a new one.`}
+            title={`Select a ${ws.itemLabel}`}
+            description={`Choose a ${ws.itemLabel} from the sidebar or start a new one.`}
             primaryAction={
-              canCreate
+              ws.canCreate
                 ? {
-                    label: getCreateLabel(),
-                    onClick: () => void handleCreate(),
+                    label: ws.getCreateLabel(),
+                    onClick: () => void ws.handleCreate(),
                   }
                 : undefined
             }
@@ -598,18 +245,19 @@ export function ItemWorkspace({
       );
     }
 
-    const isNotionSplit = splitLayout && !showBack;
+    const selected = ws.selected;
+    const isNotionSplit = ws.splitLayout && !showBack;
 
     const titleInput = (
       <Input
         value={selected.title}
         onChange={(e) => {
           const nextTitle = e.target.value;
-          setSelected({ ...selected, title: nextTitle });
-          setSelectedItemTitle(nextTitle || "Untitled");
+          ws.setSelected({ ...selected, title: nextTitle });
+          ws.setSelectedItemTitle(nextTitle || "Untitled");
         }}
         onBlur={async () => {
-          await updateSelectedField({ title: selected.title });
+          await ws.updateSelectedField({ title: selected.title });
         }}
         className={
           isNotionSplit
@@ -628,7 +276,7 @@ export function ItemWorkspace({
             {showBack ? (
               <Button
                 variant="ghost"
-                onClick={closeDetail}
+                onClick={ws.closeDetail}
                 className="item-detail-back"
                 aria-label={`Back to ${title.toLowerCase()}`}
               >
@@ -644,39 +292,48 @@ export function ItemWorkspace({
               isFavorite={selected.isFavorite}
               status={selected.status}
               onTogglePin={() =>
-                void updateSelectedField({ isPinned: !selected.isPinned })
+                void ws.updateSelectedField({ isPinned: !selected.isPinned })
               }
               onToggleFavorite={() =>
-                void updateSelectedField({ isFavorite: !selected.isFavorite })
+                void ws.updateSelectedField({ isFavorite: !selected.isFavorite })
               }
+              onShare={status === "TRASHED" ? undefined : () => ws.setShareOpen(true)}
               onArchive={
                 status === "ACTIVE"
                   ? async () => {
-                      await archiveItemAction(workspaceId, selected.id);
-                      toast.success("Archived");
-                      closeDetail();
-                      void loadItems();
+                      try {
+                        await archiveItemAction(workspaceId, selected.id);
+                        toast.success("Archived");
+                        ws.closeDetail();
+                        void ws.loadItems();
+                      } catch (error) {
+                        toast.error(getActionErrorMessage(error, "Could not archive"));
+                      }
                     }
                   : undefined
               }
               onRestore={
                 status === "ARCHIVED" || status === "TRASHED"
                   ? async () => {
-                      await restoreItemAction(workspaceId, selected.id);
-                      toast.success("Restored!");
-                      closeDetail();
-                      void loadItems();
+                      try {
+                        await restoreItemAction(workspaceId, selected.id);
+                        toast.success("Restored!");
+                        ws.closeDetail();
+                        void ws.loadItems();
+                      } catch (error) {
+                        toast.error(getActionErrorMessage(error, "Could not restore"));
+                      }
                     }
                   : undefined
               }
               onDelete={() =>
                 status === "TRASHED"
-                  ? setPermanentDeleteDialogOpen(true)
-                  : setDeleteDialogOpen(true)
+                  ? ws.setPermanentDeleteDialogOpen(true)
+                  : ws.setDeleteDialogOpen(true)
               }
               onPermanentDelete={
                 status === "TRASHED"
-                  ? () => setPermanentDeleteDialogOpen(true)
+                  ? () => ws.setPermanentDeleteDialogOpen(true)
                   : undefined
               }
             />
@@ -688,121 +345,12 @@ export function ItemWorkspace({
           <div className="item-workspace-detail-inner">
             {isNotionSplit ? titleInput : null}
 
-            {selected.type === "NOTE" ? (
-              <div className="note-color-row">
-                <span className="note-color-label">Color</span>
-                <NoteColorPicker
-                  value={getNoteColor(selected.metadata)}
-                  onChange={(colorId) => {
-                    void updateSelectedField({
-                      metadata: withNoteColor(selected.metadata, colorId),
-                    });
-                  }}
-                />
-              </div>
-            ) : null}
-
-            {selected.type === "NOTE" && (
-              <NoteEditor
-                itemId={selected.id}
-                content={selected.content}
-                plainText={selected.plainText}
-                onSave={handleSave}
-                placeholder="Start writing..."
-                className={isNotionSplit ? "note-editor--calm" : undefined}
-              />
-            )}
-
-            {selected.type === "SNIPPET" && (
-              <SnippetEditor
-                code={
-                  (selected.metadata as { code?: string })?.code ??
-                  selected.plainText ??
-                  ""
-                }
-                language={
-                  (selected.metadata as { language?: string })?.language ??
-                  "typescript"
-                }
-                onCodeChange={async (code) => {
-                  const metadata = {
-                    ...(selected.metadata as object),
-                    code,
-                    language:
-                      (selected.metadata as { language?: string })?.language ??
-                      "typescript",
-                  };
-                  await updateSelectedField({ metadata, plainText: code });
-                  completeChecklistTask("snippet");
-                }}
-                onLanguageChange={async (language) => {
-                  const metadata = {
-                    ...(selected.metadata as object),
-                    language,
-                  };
-                  await updateSelectedField({ metadata });
-                }}
-              />
-            )}
-
-            {selected.type === "COMMAND" && (
-              <CommandEditor
-                command={
-                  (selected.metadata as { command?: string })?.command ??
-                  selected.plainText ??
-                  ""
-                }
-                shell={(selected.metadata as { shell?: string })?.shell}
-                undoCommand={
-                  (selected.metadata as { undoCommand?: string })?.undoCommand
-                }
-                onSave={async (data) => {
-                  await updateSelectedField({
-                    metadata: data,
-                    plainText: data.command,
-                  });
-                }}
-              />
-            )}
-
-            {selected.type === "BOOKMARK" && (
-              <BookmarkEditor
-                url={(selected.metadata as { url?: string })?.url ?? ""}
-                title={selected.title}
-                metadata={(selected.metadata as Record<string, unknown>) ?? {}}
-                onSave={async (data) => {
-                  await updateSelectedField({
-                    title: data.title,
-                    plainText: data.plainText,
-                    metadata: data.metadata,
-                  });
-                  completeChecklistTask("bookmark");
-                }}
-              />
-            )}
-
-            {selected.type === "PROMPT" && (
-              <PromptEditor
-                content={
-                  (selected.metadata as { template?: string })?.template ??
-                  selected.plainText ??
-                  ""
-                }
-                onSave={async (template) => {
-                  await updateSelectedField({
-                    metadata: { template },
-                    plainText: template,
-                  });
-                }}
-              />
-            )}
-
-            {selected.type === "FILE" && (
-              <EmptyState
-                title="File"
-                description="Upload files using the attachments section below."
-              />
-            )}
+            <ItemTypeEditor
+              item={selected}
+              isNotionSplit={isNotionSplit}
+              onSaveNote={ws.handleSave}
+              onUpdate={ws.updateSelectedField}
+            />
 
             {selected.tags?.length ? (
               <div className="flex flex-wrap gap-2">
@@ -816,166 +364,102 @@ export function ItemWorkspace({
               </div>
             ) : null}
 
-            <details className="item-section-details">
-              <summary className="details-panel-toggle item-section-summary">
-                <History className="h-4 w-4" aria-hidden="true" />
-                <span>Version history</span>
-              </summary>
-              <div className="details-panel-body">
-                <RevisionHistory
-                  workspaceId={workspaceId}
-                  itemId={selected.id}
-                  onRestore={async (revision) => {
-                    await updateSelectedField({
-                      content: revision.content,
-                      plainText: revision.plainText,
-                    });
-                    toast.success("Restored to this version");
-                  }}
-                />
-              </div>
-            </details>
-
-            <details className="item-section-details">
-              <summary className="details-panel-toggle item-section-summary">
-                <Paperclip className="h-4 w-4" aria-hidden="true" />
-                <span>Files &amp; attachments</span>
-              </summary>
-              <div className="details-panel-body">
-                <AttachmentUploader
-                  workspaceId={workspaceId}
-                  itemId={selected.id}
-                />
-              </div>
-            </details>
-
-            <DetailsSidePanel>
-              <MetadataPanel
-                workspaceId={workspaceId}
-                projectId={selected.projectId}
-                collectionId={selected.collectionId}
-                tagIds={tagIds}
-                onUpdate={async (fields) => {
-                  await updateSelectedField(fields);
-                }}
-              />
-            </DetailsSidePanel>
+            <ItemOrganizePanel
+              workspaceId={workspaceId}
+              itemId={selected.id}
+              projectId={selected.projectId}
+              collectionId={selected.collectionId}
+              tagIds={ws.tagIds}
+              onUpdate={async (fields) => {
+                await ws.updateSelectedField(fields);
+              }}
+              onRestoreRevision={async (revision) => {
+                await ws.updateSelectedField({
+                  content: revision.content,
+                  plainText: revision.plainText,
+                });
+                toast.success("Restored to this version");
+              }}
+            />
           </div>
         </div>
       </>
     );
   }
 
-  function renderConfirmDialogs() {
+  function renderDialogs() {
     return (
       <>
-        <FriendlyConfirmDialog
-          open={permanentDeleteDialogOpen}
-          title="Delete permanently?"
-          description="This cannot be undone. The item will be removed forever."
-          confirmLabel="Delete permanently"
-          cancelLabel="Keep in Trash"
-          danger
-          onConfirm={async () => {
-            if (!selected) return;
-            await handlePermanentDelete(selected);
-            setPermanentDeleteDialogOpen(false);
+        <ItemDeleteDialogs
+          trashOpen={ws.deleteDialogOpen}
+          permanentOpen={ws.permanentDeleteDialogOpen}
+          cardTarget={ws.cardDeleteTarget}
+          onConfirmPermanent={async () => {
+            if (!ws.selected) return;
+            await ws.handlePermanentDelete(ws.selected);
+            ws.setPermanentDeleteDialogOpen(false);
           }}
-          onCancel={() => setPermanentDeleteDialogOpen(false)}
-        />
-        <FriendlyConfirmDialog
-          open={deleteDialogOpen}
-          title="Move to Trash?"
-          description="You can bring it back later from the Trash section."
-          confirmLabel="Move to Trash"
-          cancelLabel="Keep it"
-          danger
-          onConfirm={async () => {
-            if (!selected) return;
-            await trashItemAction(workspaceId, selected.id);
-            toast.success("Moved to Trash");
-            setDeleteDialogOpen(false);
-            closeDetail();
-            void loadItems();
+          onCancelPermanent={() => ws.setPermanentDeleteDialogOpen(false)}
+          onConfirmTrash={async () => {
+            if (!ws.selected) return;
+            try {
+              await trashItemAction(workspaceId, ws.selected.id);
+              toast.success("Moved to Trash");
+              ws.setDeleteDialogOpen(false);
+              ws.closeDetail();
+              void ws.loadItems();
+            } catch (error) {
+              toast.error(getActionErrorMessage(error, "Could not move to Trash"));
+            }
           }}
-          onCancel={() => setDeleteDialogOpen(false)}
-        />
-        <FriendlyConfirmDialog
-          open={Boolean(cardDeleteTarget)}
-          title="Move to Trash?"
-          description={
-            cardDeleteTarget
-              ? `"${cardDeleteTarget.title}" will be moved to Trash. You can restore it later.`
-              : ""
-          }
-          confirmLabel="Move to Trash"
-          cancelLabel="Keep it"
-          danger
-          onConfirm={async () => {
-            if (cardDeleteTarget) await handleCardDelete(cardDeleteTarget);
+          onCancelTrash={() => ws.setDeleteDialogOpen(false)}
+          onConfirmCardTrash={async () => {
+            if (ws.cardDeleteTarget) await ws.handleCardDelete(ws.cardDeleteTarget);
           }}
-          onCancel={() => setCardDeleteTarget(null)}
+          onCancelCard={() => ws.setCardDeleteTarget(null)}
         />
+        {ws.selected ? (
+          <ShareItemDialog
+            open={ws.shareOpen}
+            onOpenChange={ws.setShareOpen}
+            workspaceId={workspaceId}
+            itemId={ws.selected.id}
+            itemTitle={ws.selected.title}
+          />
+        ) : null}
       </>
     );
   }
 
-  if (splitLayout) {
+  if (ws.splitLayout) {
     return (
       <WorkspaceSplitLayout
         sidebar={renderListSidebar()}
         detail={renderItemEditor(false)}
-        footer={renderConfirmDialogs()}
+        footer={renderDialogs()}
       />
     );
   }
 
-  if (isDetailView) {
+  if (ws.isDetailView) {
     return (
       <div className="item-detail-page item-detail-page--editor">
         {renderItemEditor(true)}
-        {renderConfirmDialogs()}
+        {renderDialogs()}
       </div>
     );
-  }
-
-  function setCodeTab(tab: "snippets" | "commands") {
-    const params = new URLSearchParams(searchParams.toString());
-    if (tab === "commands") params.set("tab", "commands");
-    else params.delete("tab");
-    const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
   }
 
   return (
     <div className="item-list-page">
       <div className="item-list-toolbar">
         {types?.length ? (
-          <div className="view-toggle code-page-tabs" role="tablist" aria-label="Code type">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={codeTab === "snippets"}
-              className={`view-toggle-btn${codeTab === "snippets" ? " view-toggle-btn--active" : ""}`}
-              onClick={() => setCodeTab("snippets")}
-            >
-              Snippets
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={codeTab === "commands"}
-              className={`view-toggle-btn${codeTab === "commands" ? " view-toggle-btn--active" : ""}`}
-              onClick={() => setCodeTab("commands")}
-            >
-              Commands
-            </button>
-          </div>
+          <CodeTypeTabs value={ws.codeTab} onChange={ws.setCodeTab} />
         ) : null}
-        {canCreate ? (
-          <Button onClick={() => void handleCreate()} className="item-new-btn">
+        {ws.canCreate ? (
+          <Button onClick={() => void ws.handleCreate()} className="item-new-btn">
             <Plus className="h-4 w-4" />
-            New {codeTab === "commands" ? "command" : types?.length ? "snippet" : title.replace(/s$/, "").toLowerCase()}
+            New {ws.codeTab === "commands" ? "command" : types?.length ? "snippet" : title.replace(/s$/, "").toLowerCase()}
           </Button>
         ) : null}
         {renderCreateNoteColorPicker()}
@@ -985,8 +469,8 @@ export function ItemWorkspace({
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
             <Input
               placeholder={`Search ${title.toLowerCase()}...`}
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              value={ws.filter}
+              onChange={(e) => ws.setFilter(e.target.value)}
               aria-label={`Search ${title.toLowerCase()}`}
               className="pl-9 h-11"
             />
@@ -995,18 +479,18 @@ export function ItemWorkspace({
             <div className="view-toggle" role="group" aria-label="View mode">
               <button
                 type="button"
-                className={`view-toggle-btn${viewMode === "grid" ? " view-toggle-btn--active" : ""}`}
-                onClick={() => setViewMode("grid")}
-                aria-pressed={viewMode === "grid"}
+                className={`view-toggle-btn${ws.viewMode === "grid" ? " view-toggle-btn--active" : ""}`}
+                onClick={() => ws.setViewMode("grid")}
+                aria-pressed={ws.viewMode === "grid"}
               >
                 <Grid3x3 className="h-4 w-4 inline mr-1" />
                 Cards
               </button>
               <button
                 type="button"
-                className={`view-toggle-btn${viewMode === "list" ? " view-toggle-btn--active" : ""}`}
-                onClick={() => setViewMode("list")}
-                aria-pressed={viewMode === "list"}
+                className={`view-toggle-btn${ws.viewMode === "list" ? " view-toggle-btn--active" : ""}`}
+                onClick={() => ws.setViewMode("list")}
+                aria-pressed={ws.viewMode === "list"}
               >
                 <List className="h-4 w-4 inline mr-1" />
                 List
@@ -1016,13 +500,13 @@ export function ItemWorkspace({
         </div>
       </div>
 
-      {loading ? (
-        viewMode === "grid" ? (
+      {ws.loading ? (
+        ws.viewMode === "grid" ? (
           <ItemGridSkeleton count={6} />
         ) : (
           <ItemListSkeleton rows={6} />
         )
-      ) : filteredItems.length === 0 ? (
+      ) : ws.filteredItems.length === 0 ? (
         <EmptyState
           title={
             status === "TRASHED"
@@ -1031,57 +515,57 @@ export function ItemWorkspace({
           }
           description={emptyDescription}
           primaryAction={
-            canCreate
+            ws.canCreate
               ? {
                   label: `Create ${title.replace(/s$/, "").toLowerCase()}`,
-                  onClick: () => void handleCreate(),
+                  onClick: () => void ws.handleCreate(),
                 }
               : undefined
           }
         />
       ) : (
         <ContentFade>
-          {pinnedItems.length > 0 ? (
+          {ws.pinnedItems.length > 0 ? (
             <section className="item-cards-section">
               <p className="item-cards-section-label">Pinned</p>
               <div
                 className={
-                  viewMode === "grid"
+                  ws.viewMode === "grid"
                     ? "item-workspace-cards"
                     : "item-workspace-list-view"
                 }
               >
-                {pinnedItems.map(renderCard)}
+                {ws.pinnedItems.map(renderCard)}
               </div>
             </section>
           ) : null}
 
-          {otherItems.length > 0 ? (
+          {ws.otherItems.length > 0 ? (
             <section className="item-cards-section">
-              {pinnedItems.length > 0 ? (
+              {ws.pinnedItems.length > 0 ? (
                 <p className="item-cards-section-label">All {title.toLowerCase()}</p>
               ) : null}
               <div
                 className={
-                  viewMode === "grid"
+                  ws.viewMode === "grid"
                     ? "item-workspace-cards"
                     : "item-workspace-list-view"
                 }
               >
-                {otherItems.map(renderCard)}
+                {ws.otherItems.map(renderCard)}
               </div>
             </section>
           ) : null}
 
-          {hasMore && !filter ? (
+          {ws.hasMore && !ws.filter ? (
             <div className="item-list-load-more">
               <Button
                 variant="outline"
                 className="w-full"
-                disabled={loadingMore}
-                onClick={() => void loadItems(true, items.length)}
+                disabled={ws.loadingMore}
+                onClick={() => void ws.loadItems(true, ws.items.length)}
               >
-                {loadingMore ? (
+                {ws.loadingMore ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
                 Load more
@@ -1091,7 +575,7 @@ export function ItemWorkspace({
         </ContentFade>
       )}
 
-      {renderConfirmDialogs()}
+      {renderDialogs()}
     </div>
   );
 }

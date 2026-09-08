@@ -16,15 +16,16 @@ export async function findCollections(workspaceId: string) {
   });
 }
 
-export async function createCollection(data: Prisma.CollectionCreateInput) {
-  return db.collection.create({ data });
+export async function slugExists(workspaceId: string, slug: string) {
+  const existing = await db.collection.findUnique({
+    where: { workspaceId_slug: { workspaceId, slug } },
+    select: { id: true },
+  });
+  return Boolean(existing);
 }
 
-export async function updateCollection(
-  id: string,
-  data: Prisma.CollectionUpdateInput,
-) {
-  return db.collection.update({ where: { id }, data });
+export async function createCollection(data: Prisma.CollectionCreateInput) {
+  return db.collection.create({ data });
 }
 
 export async function deleteCollection(id: string) {

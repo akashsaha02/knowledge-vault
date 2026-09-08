@@ -1,4 +1,8 @@
 import type { ItemType } from "@/generated/prisma/client";
+import {
+  getCreateMenuItems,
+  TYPE_ROUTES,
+} from "@/features/items/item-type-registry";
 
 export type NavItem = {
   key: string;
@@ -32,32 +36,17 @@ export const MORE_NAV: NavItem[] = [
   { key: "/dashboard/trash", label: "Trash" },
 ];
 
-export const BOTTOM_NAV: NavItem[] = [];
-
-export const ALL_NAV = [...MAIN_NAV, ...MORE_NAV, ...BOTTOM_NAV];
+export const ALL_NAV = [...MAIN_NAV, ...MORE_NAV];
 
 export const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
   ALL_NAV.map((item) => [item.key, item.label]),
 );
 
-export const TYPE_ROUTES: Partial<Record<ItemType, string>> = {
-  NOTE: "/dashboard/notes",
-  SNIPPET: "/dashboard/snippets",
-  COMMAND: "/dashboard/snippets?tab=commands",
-  BOOKMARK: "/dashboard/bookmarks",
-  PROMPT: "/dashboard/prompts",
-  FILE: "/dashboard/files",
-};
+export { TYPE_ROUTES };
 
 export const CODE_ITEM_TYPES: ItemType[] = ["SNIPPET", "COMMAND"];
 
-export const CREATE_LINKS = [
-  { key: "note", label: "Note", description: "Write something down", href: "/dashboard/notes?new=1" },
-  { key: "bookmark", label: "Saved Link", description: "Save a useful website", href: "/dashboard/bookmarks?new=1" },
-  { key: "snippet", label: "Code snippet", description: "Save a piece of code", href: "/dashboard/snippets?new=1" },
-  { key: "command", label: "Terminal command", description: "Save a shell command", href: "/dashboard/snippets?tab=commands&new=1" },
-  { key: "file", label: "File", description: "Upload a file", href: "/dashboard/files?new=1" },
-] as const;
+export const CREATE_LINKS = getCreateMenuItems();
 
 export function getItemHref(type: ItemType, itemId: string): string {
   const base = TYPE_ROUTES[type] ?? "/dashboard/notes";

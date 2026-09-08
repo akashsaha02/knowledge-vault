@@ -11,6 +11,18 @@ describe("highlightMatch", () => {
   it("returns original text when query is empty", () => {
     expect(highlightMatch("Hello", "")).toBe("Hello");
   });
+
+  it("escapes HTML in the source before inserting mark tags", () => {
+    expect(highlightMatch("<script>alert(1)</script> hello", "hello")).toBe(
+      "&lt;script&gt;alert(1)&lt;/script&gt; <mark>hello</mark>",
+    );
+  });
+
+  it("does not treat query HTML as markup", () => {
+    expect(highlightMatch("a <b> bold", "<b>")).toBe(
+      "a <mark>&lt;b&gt;</mark> bold",
+    );
+  });
 });
 
 describe("groupByType", () => {

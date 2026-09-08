@@ -7,7 +7,7 @@ export default function SnippetsPage() {
       types={CODE_ITEM_TYPES}
       title="Code"
       description="Snippets and terminal commands in one place."
-      emptyDescription="Save code snippets or shell commands you want to reuse"
+      emptyDescription="Save the snippet you'll need again."
     />
   );
 }

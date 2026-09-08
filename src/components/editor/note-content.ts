@@ -1,14 +1,9 @@
+import { escapeHtml } from "@/lib/escape-html";
+
 type HtmlContent = {
   format: "html";
   html: string;
 };
-
-function escapeHtml(text: string) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 export function plainTextToHtml(text: string) {
   if (!text.trim()) return "";

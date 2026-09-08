@@ -7,11 +7,9 @@ import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 import { useUiStore } from "@/stores/ui-store";
 
 const LABELS = {
-  editing: "Unsaved changes",
   saving: "Saving…",
   saved: "Saved",
   error: "Save failed",
-  offline: "Offline",
 } as const;
 
 export function SaveStatusIndicator() {
@@ -47,7 +45,7 @@ export function SaveStatusIndicator() {
   const statusClass =
     saveStatus === "saved"
       ? "save-status-saved"
-      : saveStatus === "saving" || saveStatus === "editing"
+      : saveStatus === "saving"
         ? "save-status-saving"
         : saveStatus === "error"
           ? "save-status-error"

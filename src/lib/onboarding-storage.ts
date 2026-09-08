@@ -1,5 +1,22 @@
-const WELCOME_KEY = "kv-onboarding-welcome-dismissed";
-const CHECKLIST_KEY = "kv-onboarding-checklist";
+function readStorage(keys: string[]): string | null {
+  if (typeof window === "undefined") return null;
+  for (const key of keys) {
+    const value = localStorage.getItem(key);
+    if (value != null) return value;
+  }
+  return null;
+}
+
+function writeStorage(primary: string, value: string, legacy?: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(primary, value);
+  if (legacy) localStorage.removeItem(legacy);
+}
+
+const WELCOME_KEY = "nook-onboarding-welcome-dismissed";
+const WELCOME_KEY_LEGACY = "kv-onboarding-welcome-dismissed";
+const CHECKLIST_KEY = "nook-onboarding-checklist";
+const CHECKLIST_KEY_LEGACY = "kv-onboarding-checklist";
 
 export type ChecklistTask =
   | "note"
@@ -22,7 +39,7 @@ const DEFAULT_STATE: ChecklistState = {
 function readChecklist(): ChecklistState {
   if (typeof window === "undefined") return DEFAULT_STATE;
   try {
-    const raw = localStorage.getItem(CHECKLIST_KEY);
+    const raw = readStorage([CHECKLIST_KEY, CHECKLIST_KEY_LEGACY]);
     return raw ? { ...DEFAULT_STATE, ...(JSON.parse(raw) as ChecklistState) } : DEFAULT_STATE;
   } catch {
     return DEFAULT_STATE;
@@ -30,18 +47,16 @@ function readChecklist(): ChecklistState {
 }
 
 function writeChecklist(state: ChecklistState) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(CHECKLIST_KEY, JSON.stringify(state));
+  writeStorage(CHECKLIST_KEY, JSON.stringify(state), CHECKLIST_KEY_LEGACY);
 }
 
 export function isWelcomeDismissed(): boolean {
   if (typeof window === "undefined") return true;
-  return localStorage.getItem(WELCOME_KEY) === "1";
+  return readStorage([WELCOME_KEY, WELCOME_KEY_LEGACY]) === "1";
 }
 
 export function dismissWelcome() {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(WELCOME_KEY, "1");
+  writeStorage(WELCOME_KEY, "1", WELCOME_KEY_LEGACY);
 }
 
 export function getChecklistState(): ChecklistState {

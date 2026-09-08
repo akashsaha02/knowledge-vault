@@ -74,11 +74,6 @@ export function ItemGridSkeleton({ count = 6 }: { count?: number }) {
   );
 }
 
-/** @deprecated Use PageBodySkeleton inside PageShell */
-export function PageSkeleton() {
-  return <PageBodySkeleton />;
-}
-
 export function PageBodySkeleton() {
   return (
     <div className="skeleton-page-body" aria-hidden="true">
@@ -110,9 +105,4 @@ export function EditorSkeleton() {
       <SkeletonLine className="skeleton-line-editor skeleton-line-editor-short" />
     </div>
   );
-}
-
-/** @deprecated Use ItemGridSkeleton */
-export function CardGridSkeleton({ count = 4 }: { count?: number }) {
-  return <ItemGridSkeleton count={count} />;
 }

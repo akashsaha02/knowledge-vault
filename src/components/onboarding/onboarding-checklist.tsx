@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   CHECKLIST_TASKS,
+  completeChecklistTask,
   dismissChecklist,
   getChecklistState,
   type ChecklistState,
@@ -45,10 +46,9 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
     const current = getChecklistState();
     const merged = [...new Set([...current.completed, ...autoComplete])];
     if (merged.length !== current.completed.length) {
-      localStorage.setItem(
-        "kv-onboarding-checklist",
-        JSON.stringify({ ...current, completed: merged }),
-      );
+      for (const task of autoComplete) {
+        completeChecklistTask(task);
+      }
       setState({ ...current, completed: merged });
     }
   }, [props]);

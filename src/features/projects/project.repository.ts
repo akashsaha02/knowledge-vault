@@ -16,12 +16,16 @@ export async function findProjects(workspaceId: string) {
   });
 }
 
-export async function createProject(data: Prisma.ProjectCreateInput) {
-  return db.project.create({ data });
+export async function slugExists(workspaceId: string, slug: string) {
+  const existing = await db.project.findUnique({
+    where: { workspaceId_slug: { workspaceId, slug } },
+    select: { id: true },
+  });
+  return Boolean(existing);
 }
 
-export async function updateProject(id: string, data: Prisma.ProjectUpdateInput) {
-  return db.project.update({ where: { id }, data });
+export async function createProject(data: Prisma.ProjectCreateInput) {
+  return db.project.create({ data });
 }
 
 export async function deleteProject(id: string) {

@@ -51,7 +51,3 @@ export function CategoryChip({
     </span>
   );
 }
-
-export function getTypeLabel(type: string): string {
-  return TYPE_CONFIG[type]?.label ?? type;
-}

@@ -11,15 +11,15 @@ export default async function DashboardPage() {
   if (!workspaceId) return null;
 
   const [items, projects, tags] = await Promise.all([
-    listItemsAction({ workspaceId, limit: 8 }),
+    listItemsAction({ workspaceId, status: "ACTIVE", limit: 8 }),
     listProjectsAction(workspaceId),
     listTagsAction(workspaceId),
   ]);
 
   const [notes, snippets, bookmarks] = await Promise.all([
-    listItemsAction({ workspaceId, type: "NOTE", limit: 1 }),
-    listItemsAction({ workspaceId, type: "SNIPPET", limit: 1 }),
-    listItemsAction({ workspaceId, type: "BOOKMARK", limit: 1 }),
+    listItemsAction({ workspaceId, type: "NOTE", status: "ACTIVE", limit: 1 }),
+    listItemsAction({ workspaceId, type: "SNIPPET", status: "ACTIVE", limit: 1 }),
+    listItemsAction({ workspaceId, type: "BOOKMARK", status: "ACTIVE", limit: 1 }),
   ]);
 
   return (

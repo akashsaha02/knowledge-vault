@@ -2,11 +2,11 @@
 
 import { AlertTriangle, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { detectCommandRisk, RISK_LABELS } from "@/features/items/command.utils";
 import { CodeMirrorEditor } from "@/components/editor/codemirror-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/clipboard";
 import {
   Select,
   SelectContent,
@@ -109,10 +109,7 @@ export function CommandEditor({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={async () => {
-            await navigator.clipboard.writeText(localCommand);
-            toast.success("Copied to clipboard");
-          }}
+          onClick={() => void copyToClipboard(localCommand)}
         >
           <Copy className="h-4 w-4" />
           Copy

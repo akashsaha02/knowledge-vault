@@ -3,10 +3,10 @@
 import { Decoration, type DecorationSet, EditorView, ViewPlugin } from "@codemirror/view";
 import { Copy } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import CodeMirror from "@uiw/react-codemirror";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/clipboard";
 
 const variableMark = Decoration.mark({ class: "cm-prompt-variable" });
 
@@ -65,10 +65,7 @@ export function PromptEditor({ content, onSave }: PromptEditorProps) {
           type="button"
           variant="secondary"
           size="sm"
-          onClick={async () => {
-            await navigator.clipboard.writeText(local);
-            toast.success("Copied to clipboard");
-          }}
+          onClick={() => void copyToClipboard(local)}
         >
           <Copy className="h-4 w-4" />
           Copy template

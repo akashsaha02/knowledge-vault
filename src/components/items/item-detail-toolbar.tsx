@@ -4,6 +4,7 @@ import {
   Archive,
   MoreHorizontal,
   Pin,
+  Share2,
   Star,
   Trash2,
   Undo2,
@@ -24,6 +25,7 @@ type ItemDetailToolbarProps = {
   status: "ACTIVE" | "DRAFT" | "ARCHIVED" | "TRASHED";
   onTogglePin: () => void;
   onToggleFavorite: () => void;
+  onShare?: () => void;
   onArchive?: () => void;
   onRestore?: () => void;
   onDelete: () => void;
@@ -37,6 +39,7 @@ export function ItemDetailToolbar({
   status,
   onTogglePin,
   onToggleFavorite,
+  onShare,
   onArchive,
   onRestore,
   onDelete,
@@ -124,6 +127,17 @@ export function ItemDetailToolbar({
         >
           <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
         </Button>
+        {onShare ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Share"
+            onClick={onShare}
+            aria-label="Share item"
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
+        ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

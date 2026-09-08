@@ -31,7 +31,7 @@ const PAGE_DESCRIPTIONS: Record<string, string> = {
 export async function DashboardItemPage({
   type,
   types,
-  status,
+  status = "ACTIVE",
   title,
   description,
   emptyDescription,

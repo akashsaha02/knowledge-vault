@@ -1,15 +1,14 @@
 import "server-only";
 
-import { db } from "@/lib/db";
 import { uniqueSlug } from "@/lib/slug";
 import {
   createWorkspace,
   findMember,
+  findUserActiveWorkspaceId,
   findUserWorkspaces,
   setActiveWorkspace,
 } from "@/features/workspaces/workspace.repository";
-import { hasPermission } from "@/features/workspaces/workspace.permissions";
-import type { WorkspaceRole } from "@/generated/prisma/client";
+import { hasPermission, canEditItem } from "@/features/workspaces/workspace.permissions";
 
 export class AuthorizationError extends Error {
   constructor(message = "Unauthorized") {
@@ -60,13 +59,10 @@ export async function getUserWorkspaces(userId: string) {
 }
 
 export async function getActiveWorkspace(userId: string) {
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { activeWorkspaceId: true },
-  });
+  const activeWorkspaceId = await findUserActiveWorkspaceId(userId);
 
-  if (user?.activeWorkspaceId) {
-    const member = await findMember(user.activeWorkspaceId, userId);
+  if (activeWorkspaceId) {
+    const member = await findMember(activeWorkspaceId, userId);
     if (member) {
       return member.workspaceId;
     }
@@ -88,12 +84,4 @@ export async function switchWorkspace(userId: string, workspaceId: string) {
   return workspaceId;
 }
 
-export function canEditItem(
-  role: WorkspaceRole,
-  userId: string,
-  createdById: string,
-) {
-  if (hasPermission(role, "editAll")) return true;
-  if (hasPermission(role, "editOwn") && userId === createdById) return true;
-  return false;
-}
+export { canEditItem };

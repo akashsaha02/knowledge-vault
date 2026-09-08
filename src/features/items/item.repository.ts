@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { itemVisibilityWhere } from "@/features/items/item-access";
 import type { ItemListFilters } from "@/features/items/item.types";
 import { Prisma } from "@/generated/prisma/client";
 import type { ItemStatus, ItemType } from "@/generated/prisma/client";
@@ -13,6 +14,35 @@ export async function findItemById(id: string) {
       attachments: true,
     },
   });
+}
+
+function buildAccessAndQueryFilter(
+  filters: ItemListFilters,
+): Prisma.ItemWhereInput {
+  const queryFilter: Prisma.ItemWhereInput | undefined = filters.query
+    ? {
+        OR: [
+          { title: { contains: filters.query, mode: "insensitive" } },
+          { plainText: { contains: filters.query, mode: "insensitive" } },
+        ],
+      }
+    : undefined;
+
+  const accessFilter: Prisma.ItemWhereInput | undefined = filters.userId
+    ? itemVisibilityWhere(
+        filters.userId,
+        Boolean(filters.canSeeOthersPrivateItems),
+      )
+    : undefined;
+
+  const accessIsEmpty =
+    accessFilter && Object.keys(accessFilter).length === 0;
+
+  if (queryFilter && accessFilter && !accessIsEmpty) {
+    return { AND: [queryFilter, accessFilter] };
+  }
+
+  return queryFilter ?? (accessIsEmpty ? {} : (accessFilter ?? {}));
 }
 
 export async function findItems(filters: ItemListFilters) {
@@ -33,19 +63,8 @@ export async function findItems(filters: ItemListFilters) {
     ...(filters.tagId && {
       tags: { some: { tagId: filters.tagId } },
     }),
-    ...(filters.query && {
-      OR: [
-        { title: { contains: filters.query, mode: "insensitive" } },
-        { plainText: { contains: filters.query, mode: "insensitive" } },
-      ],
-    }),
     ...(filters.favoritesOnly && { isFavorite: true }),
-    ...(filters.userId && {
-      OR: [
-        { visibility: { not: "PRIVATE" } },
-        { createdById: filters.userId },
-      ],
-    }),
+    ...buildAccessAndQueryFilter(filters),
   };
 
   return db.item.findMany({
@@ -125,9 +144,17 @@ export async function slugExists(workspaceId: string, slug: string) {
 export async function searchItemsFullText(
   workspaceId: string,
   query: string,
-  filters?: { type?: ItemType; status?: ItemStatus },
+  filters: {
+    type?: ItemType;
+    status?: ItemStatus;
+    userId: string;
+    canSeeOthersPrivateItems: boolean;
+  },
 ) {
-  const status = filters?.status ?? "ACTIVE";
+  const status = filters.status ?? "ACTIVE";
+  const visibilitySql = filters.canSeeOthersPrivateItems
+    ? Prisma.empty
+    : Prisma.sql`AND (i.visibility <> 'PRIVATE'::"Visibility" OR i."createdById" = ${filters.userId})`;
 
   return db.$queryRaw<
     Array<{
@@ -146,10 +173,11 @@ export async function searchItemsFullText(
       AND i."deletedAt" IS NULL
       AND i.status = ${status}::"ItemStatus"
       ${
-        filters?.type
+        filters.type
           ? Prisma.sql`AND i.type = ${filters.type}::"ItemType"`
           : Prisma.empty
       }
+      ${visibilitySql}
       AND i."searchVector" @@ plainto_tsquery('english', ${query})
     ORDER BY rank DESC, i."updatedAt" DESC
     LIMIT 50

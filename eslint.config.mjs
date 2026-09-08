@@ -15,7 +15,29 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Override default ignores of eslint-config-next.
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.tsx", "src/hooks/**/*.{ts,tsx}"],
+    ignores: ["src/app/**/page.tsx", "src/app/**/layout.tsx", "src/app/api/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/lib/db",
+              message: "Client and UI modules cannot import the database.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["**/item.repository", "**/item.repository.ts"],
+              message: "UI must not import repository internals.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",

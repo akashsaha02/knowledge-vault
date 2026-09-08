@@ -2,8 +2,6 @@ import "server-only";
 
 import { validateBookmarkUrl } from "@/lib/url-validation";
 
-export { validateBookmarkUrl };
-
 export async function fetchBookmarkMetadata(rawUrl: string) {
   const url = validateBookmarkUrl(rawUrl);
   const response = await fetch(url, {

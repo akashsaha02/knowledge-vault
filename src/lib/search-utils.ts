@@ -1,8 +1,11 @@
+import { escapeHtml } from "@/lib/escape-html";
+
 export function highlightMatch(text: string, query: string): string {
-  if (!query.trim()) return text;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`(${escaped})`, "gi");
-  return text.replace(regex, "<mark>$1</mark>");
+  const escapedText = escapeHtml(text);
+  if (!query.trim()) return escapedText;
+  const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escapedQuery})`, "gi");
+  return escapedText.replace(regex, "<mark>$1</mark>");
 }
 
 export function groupByType<T extends { type: string }>(

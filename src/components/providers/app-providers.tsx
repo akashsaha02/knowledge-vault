@@ -11,5 +11,3 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     </ThemeProvider>
   );
 }
-
-export { setThemeMode } from "@/components/providers/theme-context";

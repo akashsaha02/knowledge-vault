@@ -19,7 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 import { searchAction } from "@/features/search/search.actions";
 import type { ItemType } from "@/generated/prisma/client";
-import { TYPE_ROUTES } from "@/lib/nav-config";
+import { getItemHref } from "@/lib/nav-config";
 import { completeChecklistTask } from "@/lib/onboarding-storage";
 import { addRecentSearch } from "@/lib/recent-storage";
 import { groupByType, highlightMatch } from "@/lib/search-utils";
@@ -42,18 +42,37 @@ const typeLabels: Record<string, string> = {
 };
 
 const ALL_TYPES = "__all__";
+const ALL_PROJECTS = "__all_projects__";
+const ALL_TAGS = "__all_tags__";
 
-export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
+type SearchPageClientProps = {
+  workspaceId: string;
+  projects: Array<{ id: string; name: string }>;
+  tags: Array<{ id: string; name: string }>;
+};
+
+export function SearchPageClient({
+  workspaceId,
+  projects,
+  tags,
+}: SearchPageClientProps) {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
   const [query, setQuery] = useState(initialQuery);
   const [type, setType] = useState<ItemType | undefined>();
+  const [projectId, setProjectId] = useState<string | undefined>();
+  const [tagId, setTagId] = useState<string | undefined>();
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   const runSearch = useCallback(
-    async (value: string, typeFilter = type) => {
+    async (
+      value: string,
+      typeFilter = type,
+      projectFilter = projectId,
+      tagFilter = tagId,
+    ) => {
       const trimmed = value.trim();
       if (!trimmed) {
         setResults([]);
@@ -65,7 +84,14 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
       setHasSearched(true);
       try {
         const data = await searchAction(
-          { workspaceId, query: trimmed, type: typeFilter, limit: 50 },
+          {
+            workspaceId,
+            query: trimmed,
+            type: typeFilter,
+            projectId: projectFilter,
+            tagId: tagFilter,
+            limit: 50,
+          },
           true,
         );
         setResults(data as SearchResult[]);
@@ -75,7 +101,7 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
         setLoading(false);
       }
     },
-    [workspaceId, type],
+    [workspaceId, type, projectId, tagId],
   );
 
   useEffect(() => {
@@ -135,7 +161,7 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
           onValueChange={(value) => {
             const nextType = value === ALL_TYPES ? undefined : (value as ItemType);
             setType(nextType);
-            if (query.trim()) void runSearch(query, nextType);
+            if (query.trim()) void runSearch(query, nextType, projectId, tagId);
           }}
         >
           <SelectTrigger className="min-w-[160px]" aria-label="Filter by type">
@@ -150,6 +176,50 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
             ))}
           </SelectContent>
         </Select>
+        {projects.length > 0 ? (
+          <Select
+            value={projectId ?? ALL_PROJECTS}
+            onValueChange={(value) => {
+              const next = value === ALL_PROJECTS ? undefined : value;
+              setProjectId(next);
+              if (query.trim()) void runSearch(query, type, next, tagId);
+            }}
+          >
+            <SelectTrigger className="min-w-[160px]" aria-label="Filter by project">
+              <SelectValue placeholder="All projects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+        {tags.length > 0 ? (
+          <Select
+            value={tagId ?? ALL_TAGS}
+            onValueChange={(value) => {
+              const next = value === ALL_TAGS ? undefined : value;
+              setTagId(next);
+              if (query.trim()) void runSearch(query, type, projectId, next);
+            }}
+          >
+            <SelectTrigger className="min-w-[160px]" aria-label="Filter by tag">
+              <SelectValue placeholder="All tags" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_TAGS}>All tags</SelectItem>
+              {tags.map((tag) => (
+                <SelectItem key={tag.id} value={tag.id}>
+                  {tag.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
       </div>
 
       {loading ? (
@@ -190,7 +260,7 @@ export function SearchPageClient({ workspaceId }: { workspaceId: string }) {
               {groupItems.map((item) => {
                 const preview =
                   item.plainText ?? item.plain_text ?? "No preview available";
-                const href = `${TYPE_ROUTES[item.type] ?? "/dashboard"}?item=${item.id}`;
+                const href = getItemHref(item.type, item.id);
 
                 return (
                   <Link key={item.id} href={href} className="search-result-card">

@@ -1,10 +1,6 @@
 import { db } from "@/lib/db";
 import type { WorkspaceRole } from "@/generated/prisma/client";
 
-export async function findWorkspaceById(id: string) {
-  return db.workspace.findUnique({ where: { id } });
-}
-
 export async function findMember(workspaceId: string, userId: string) {
   return db.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId, userId } },
@@ -40,6 +36,14 @@ export async function createWorkspace(data: {
     },
     include: { members: true },
   });
+}
+
+export async function findUserActiveWorkspaceId(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { activeWorkspaceId: true },
+  });
+  return user?.activeWorkspaceId ?? null;
 }
 
 export async function setActiveWorkspace(userId: string, workspaceId: string) {

@@ -2,9 +2,9 @@
 
 import { Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { CodeMirrorEditor } from "@/components/editor/codemirror-editor";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/clipboard";
 import {
   Select,
   SelectContent,
@@ -77,10 +77,7 @@ export function SnippetEditor({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={async () => {
-            await navigator.clipboard.writeText(localCode);
-            toast.success("Copied to clipboard");
-          }}
+          onClick={() => void copyToClipboard(localCode)}
         >
           <Copy className="h-4 w-4" />
           Copy

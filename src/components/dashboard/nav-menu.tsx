@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { navIcon } from "@/lib/nav-icons";
 import {
-  BOTTOM_NAV,
   COLLAPSED_MORE_NAV,
   getSelectedNavKey,
   MAIN_NAV,
@@ -16,7 +15,6 @@ import { cn } from "@/lib/utils";
 
 type DashboardNavMenuProps = {
   onNavigate?: () => void;
-  showBottomNav?: boolean;
   collapsed?: boolean;
 };
 
@@ -54,7 +52,6 @@ function NavLink({
 
 export function DashboardNavMenu({
   onNavigate,
-  showBottomNav = true,
   collapsed = false,
 }: DashboardNavMenuProps) {
   const pathname = usePathname();
@@ -119,21 +116,6 @@ export function DashboardNavMenu({
           </>
         )}
       </div>
-
-      {showBottomNav && !collapsed ? (
-        <div className="dashboard-nav-bottom">
-          {BOTTOM_NAV.map((item) => (
-            <NavLink
-              key={item.key}
-              href={item.key}
-              label={item.label}
-              active={selectedKey === item.key}
-              collapsed={collapsed}
-              onNavigate={onNavigate}
-            />
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

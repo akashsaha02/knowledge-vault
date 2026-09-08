@@ -16,3 +16,13 @@ export function hasPermission(
 ): boolean {
   return ROLE_PERMISSIONS[action].includes(role);
 }
+
+export function canEditItem(
+  role: WorkspaceRole,
+  userId: string,
+  createdById: string,
+) {
+  if (hasPermission(role, "editAll")) return true;
+  if (hasPermission(role, "editOwn") && userId === createdById) return true;
+  return false;
+}

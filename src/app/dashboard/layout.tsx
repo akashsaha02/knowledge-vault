@@ -32,6 +32,7 @@ export default async function DashboardLayout({
       userName={user.name}
       workspaceId={workspaceId}
       workspaceName={current?.workspace.name ?? "Workspace"}
+      workspaceCount={memberships.length}
     >
       {children}
     </DashboardShell>

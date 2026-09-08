@@ -5,7 +5,7 @@ export default function BookmarksPage() {
     <DashboardItemPage
       type="BOOKMARK"
       title="Saved Links"
-      emptyDescription="Save your first link — paste a URL and give it a name"
+      emptyDescription="Keep useful pages close."
     />
   );
 }

@@ -4,7 +4,8 @@
 
 - Run: `npm test`
 - Location: `src/**/__tests__/*.test.ts`
-- Covers: utilities, permissions, security helpers, search utils
+- Covers: utilities, permissions, visibility, lifecycle, import schema, share-link state, search highlight escaping, item-type registry
+- On Windows Git Bash, `scripts/run-vitest.mjs` canonicalizes the drive letter so Vitest does not load two runtimes (`Cannot read properties of undefined (reading 'config')`).
 
 ## E2E tests (Playwright)
 

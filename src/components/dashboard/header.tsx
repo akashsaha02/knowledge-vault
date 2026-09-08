@@ -29,10 +29,12 @@ export function DashboardHeader({
   userName,
   workspaceId,
   workspaceName,
+  workspaceCount = 1,
 }: {
   userName: string;
   workspaceId: string;
   workspaceName?: string;
+  workspaceCount?: number;
 }) {
   const router = useRouter();
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
@@ -77,10 +79,12 @@ export function DashboardHeader({
         </div>
 
         <div className="dashboard-header-right">
-          <WorkspaceSwitcher
-            currentWorkspaceId={workspaceId}
-            currentWorkspaceName={workspaceName ?? "Workspace"}
-          />
+          {workspaceCount > 1 ? (
+            <WorkspaceSwitcher
+              currentWorkspaceId={workspaceId}
+              currentWorkspaceName={workspaceName ?? "Workspace"}
+            />
+          ) : null}
           <button
             type="button"
             className="dashboard-search-btn"

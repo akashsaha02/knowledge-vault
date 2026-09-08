@@ -5,7 +5,7 @@ export default function FilesPage() {
     <DashboardItemPage
       type="FILE"
       title="Files"
-      emptyDescription="Upload a file to keep it safe here"
+      emptyDescription="Keep a file next to the notes that need it."
     />
   );
 }
