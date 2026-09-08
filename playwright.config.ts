@@ -30,9 +30,9 @@ export default defineConfig({
         process.env.PLAYWRIGHT_BASE_URL ??
         process.env.BETTER_AUTH_URL ??
         "http://localhost:8000",
-      NEXT_PUBLIC_APP_URL:
+      APP_URL:
         process.env.PLAYWRIGHT_BASE_URL ??
-        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.APP_URL ??
         "http://localhost:8000",
     },
   },

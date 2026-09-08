@@ -3,16 +3,14 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { bootstrapPersonalWorkspace } from "@/features/workspaces/workspace.service";
 import { getAuthSecret } from "@/lib/auth-secret";
+import { getAuthBaseUrl, getTrustedOrigins } from "@/lib/auth-url";
 import { sendEmail } from "@/lib/email";
 import { BRAND_NAME } from "@/lib/brand";
 import { db } from "@/lib/db";
 
 export const auth = betterAuth({
   secret: getAuthSecret(),
-  baseURL:
-    process.env.BETTER_AUTH_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    "http://localhost:8000",
+  baseURL: getAuthBaseUrl(),
 
   database: prismaAdapter(db, {
     provider: "postgresql",
@@ -55,10 +53,7 @@ export const auth = betterAuth({
     },
   },
 
-  trustedOrigins: [
-    process.env.BETTER_AUTH_URL ?? "http://localhost:8000",
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:8000",
-  ],
+  trustedOrigins: getTrustedOrigins(),
 
   databaseHooks: {
     user: {

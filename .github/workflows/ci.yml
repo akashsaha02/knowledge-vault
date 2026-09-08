@@ -19,7 +19,7 @@ env:
   DIRECT_URL: postgresql://postgres:postgres@localhost:5432/nook
   BETTER_AUTH_SECRET: ci-better-auth-secret-must-be-at-least-32-chars
   BETTER_AUTH_URL: http://localhost:8000
-  NEXT_PUBLIC_APP_URL: http://localhost:8000
+  APP_URL: http://localhost:8000
 
 jobs:
   quality:

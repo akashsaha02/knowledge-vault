@@ -40,8 +40,14 @@ npm run dev
 
 1. Push to GitHub and import into Vercel
 2. Set all variables from `.env.example`
-3. Run `npx prisma migrate deploy` against production database
-4. Deploy and verify auth, CRUD, uploads, and search
+3. Set `BETTER_AUTH_URL` and `APP_URL` to the **live site origin**
+   (for example `https://your-app.vercel.app` or your custom domain). These are
+   server-only — do not use a `NEXT_PUBLIC_` prefix. Do not copy
+   `http://localhost:8000` into Vercel.
+4. Add the same origin to Google OAuth authorized redirect URIs:
+   `https://your-domain.com/api/auth/callback/google`
+5. Run `npx prisma migrate deploy` against production database
+6. Deploy and verify auth, CRUD, uploads, and search
 
 ### GitHub Actions
 
