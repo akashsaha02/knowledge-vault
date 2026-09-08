@@ -30,6 +30,7 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       userName={user.name}
+      userImage={user.image}
       workspaceId={workspaceId}
       workspaceName={current?.workspace.name ?? "Workspace"}
       workspaceCount={memberships.length}

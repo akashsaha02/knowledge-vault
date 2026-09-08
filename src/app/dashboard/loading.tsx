@@ -1,5 +1,9 @@
-import { RouteLoadingFallback } from "@/components/ui/content-loader";
+import { PageBodySkeleton } from "@/components/ui/loading-skeleton";
 
 export default function DashboardLoading() {
-  return <RouteLoadingFallback />;
+  return (
+    <div className="page-shell">
+      <PageBodySkeleton />
+    </div>
+  );
 }

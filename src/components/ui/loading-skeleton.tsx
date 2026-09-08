@@ -74,6 +74,27 @@ export function ItemGridSkeleton({ count = 6 }: { count?: number }) {
   );
 }
 
+export function DashboardPageSkeleton() {
+  return (
+    <div className="home-dashboard" aria-hidden="true">
+      <div className="home-hero">
+        <SkeletonLine className="skeleton-line-detail-title" />
+        <SkeletonLine className="skeleton-line-body skeleton-line-short" />
+      </div>
+      <div className="skeleton-metric-grid">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="skeleton-metric">
+            <SkeletonLine className="skeleton-avatar" />
+            <SkeletonLine className="skeleton-line-meta" />
+            <SkeletonLine className="skeleton-line-title" />
+          </div>
+        ))}
+      </div>
+      <ListSkeleton rows={4} />
+    </div>
+  );
+}
+
 export function PageBodySkeleton() {
   return (
     <div className="skeleton-page-body" aria-hidden="true">

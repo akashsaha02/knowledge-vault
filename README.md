@@ -43,6 +43,22 @@ npm run dev
 3. Run `npx prisma migrate deploy` against production database
 4. Deploy and verify auth, CRUD, uploads, and search
 
+### GitHub Actions
+
+Pushes and pull requests run `.github/workflows/ci.yml`:
+
+- typecheck, lint, unit tests, and production build
+- Playwright against a Postgres + pgvector service (including authenticated flows)
+- production deploy to Vercel on `main` / `master` after those jobs pass
+
+For the deploy job, add these repository secrets:
+
+- `VERCEL_TOKEN` — Vercel account token
+- `VERCEL_ORG_ID` — from `.vercel/project.json` after `npx vercel link`
+- `VERCEL_PROJECT_ID` — from the same file
+
+If Vercel already deploys from GitHub, skip those secrets and remove the `deploy` job to avoid a second production deploy.
+
 ## Architecture
 
 - **UI:** Next.js App Router, Tailwind CSS v4, Radix UI primitives

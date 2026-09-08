@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { IllustrationName } from "@/components/ui/illustration";
 import { ContentFade } from "@/components/ui/content-fade";
 import { PageBodySkeleton } from "@/components/ui/loading-skeleton";
 
@@ -33,6 +34,7 @@ type ResourceListPageProps<T extends ResourceListItem> = {
   createLabel: string;
   emptyTitle: string;
   emptyActionLabel: string;
+  emptyIllustration?: IllustrationName;
   namePlaceholder: string;
   descriptionPlaceholder: string;
   dialogTitle: string;
@@ -60,6 +62,7 @@ export function ResourceListPage<T extends ResourceListItem>({
   createLabel,
   emptyTitle,
   emptyActionLabel,
+  emptyIllustration = "organize",
   namePlaceholder,
   descriptionPlaceholder,
   dialogTitle,
@@ -129,6 +132,7 @@ export function ResourceListPage<T extends ResourceListItem>({
         <PageBodySkeleton />
       ) : error ? (
         <EmptyState
+          illustration="error"
           title={loadErrorTitle}
           description={error}
           primaryAction={{
@@ -140,6 +144,7 @@ export function ResourceListPage<T extends ResourceListItem>({
         />
       ) : items.length === 0 ? (
         <EmptyState
+          illustration={emptyIllustration}
           title={emptyTitle}
           description={description}
           primaryAction={{

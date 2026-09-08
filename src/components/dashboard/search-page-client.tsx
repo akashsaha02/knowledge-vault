@@ -253,12 +253,14 @@ export function SearchPageClient({
         </div>
       ) : !hasSearched ? (
         <EmptyState
+          illustration="search"
           title="Search your Nook"
           description="Type to search notes, code, and saved links."
           shortcut="Ctrl+K"
         />
       ) : results.length === 0 ? (
         <EmptyState
+          illustration="search"
           title={query ? `No results for "${query}"` : "No results"}
           description="Try different words, or clear filters."
           primaryAction={{

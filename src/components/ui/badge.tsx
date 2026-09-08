@@ -7,10 +7,14 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-transparent bg-[var(--brand)] text-white",
+        default: "border-transparent bg-[var(--primary-soft)] text-[var(--primary-soft-fg)]",
         secondary:
-          "border-transparent bg-[var(--accent-soft)] text-[var(--text-secondary)]",
+          "border-transparent bg-[var(--surface-muted)] text-[var(--text-secondary)]",
         outline: "text-[var(--foreground)] border-[var(--border)]",
+        success: "border-transparent bg-[var(--success-soft)] text-[var(--success)]",
+        warning: "border-transparent bg-[var(--warning-soft)] text-[var(--warning)]",
+        danger: "border-transparent bg-[var(--danger-soft)] text-[var(--danger)]",
+        info: "border-transparent bg-[var(--info-soft)] text-[var(--info)]",
         note: "border-transparent bg-[var(--tag-bg)] text-[var(--tag-text)]",
         link: "border-transparent bg-[var(--tag-bg)] text-[var(--tag-text)]",
         code: "border-transparent bg-[var(--tag-bg)] text-[var(--tag-text)]",

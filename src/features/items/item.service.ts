@@ -14,6 +14,7 @@ import {
   createRevision,
   findItemById,
   findItems,
+  countItemsGroupedByType,
   findRevisions,
   hardDeleteItem,
   searchItemsFullText,
@@ -30,7 +31,7 @@ import {
 } from "@/features/workspaces/workspace.service";
 import { validateItemReferences } from "@/features/workspaces/workspace-resources";
 import { uniqueSlug } from "@/lib/slug";
-import type { ItemStatus, Prisma } from "@/generated/prisma/client";
+import type { ItemStatus, ItemType, Prisma } from "@/generated/prisma/client";
 import type { ItemListFilters } from "@/features/items/item.types";
 
 async function resolveUniqueSlug(workspaceId: string, title: string) {
@@ -40,6 +41,25 @@ async function resolveUniqueSlug(workspaceId: string, title: string) {
     slug = uniqueSlug(title, String(counter++));
   }
   return slug;
+}
+
+export async function countAccessibleItemsByType(
+  userId: string,
+  workspaceId: string,
+) {
+  const member = await requireWorkspaceMember(userId, workspaceId);
+  const rows = await countItemsGroupedByType({
+    workspaceId,
+    userId,
+    status: "ACTIVE",
+    canSeeOthersPrivateItems: canSeeOthersPrivateItems(member.role),
+  });
+
+  const counts: Partial<Record<ItemType, number>> = {};
+  for (const row of rows) {
+    counts[row.type] = row._count._all;
+  }
+  return counts;
 }
 
 export async function listAccessibleItems(

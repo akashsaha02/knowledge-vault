@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Illustration } from "@/components/ui/illustration";
 import { BRAND_NAME } from "@/lib/brand";
 import { dismissWelcome, isWelcomeDismissed } from "@/lib/onboarding-storage";
 
@@ -37,6 +38,9 @@ export function WelcomeModal() {
     >
       <DialogContent>
         <DialogHeader>
+          <div className="welcome-modal-visual">
+            <Illustration name="welcome" size="sm" />
+          </div>
           <DialogTitle>Welcome to {BRAND_NAME}</DialogTitle>
         </DialogHeader>
         <p className="welcome-modal-text">

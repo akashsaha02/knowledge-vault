@@ -2,6 +2,10 @@ import { Inbox } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  EmptyStateIllustration,
+  type IllustrationName,
+} from "@/components/ui/illustration";
 
 type EmptyStateAction = {
   label: string;
@@ -9,13 +13,17 @@ type EmptyStateAction = {
   onClick?: () => void;
 };
 
+type EmptyStateSize = "sm" | "md" | "lg";
+
 type EmptyStateProps = {
   title: string;
   description?: string;
   icon?: ReactNode;
+  illustration?: IllustrationName;
   primaryAction?: EmptyStateAction;
   secondaryAction?: EmptyStateAction;
   shortcut?: string;
+  size?: EmptyStateSize;
   className?: string;
 };
 
@@ -45,15 +53,24 @@ export function EmptyState({
   title,
   description,
   icon,
+  illustration,
   primaryAction,
   secondaryAction,
   shortcut,
+  size = "md",
   className = "",
 }: EmptyStateProps) {
   return (
-    <div className={`empty-state ${className}`.trim()} role="status">
-      <div className="empty-state-icon" aria-hidden="true">
-        {icon ?? <Inbox size={24} strokeWidth={1.5} />}
+    <div
+      className={`empty-state empty-state--${size} ${className}`.trim()}
+      role="status"
+    >
+      <div className="empty-state-visual" aria-hidden="true">
+        {illustration ? (
+          <EmptyStateIllustration name={illustration} />
+        ) : (
+          <div className="empty-state-icon">{icon ?? <Inbox size={24} strokeWidth={1.5} />}</div>
+        )}
       </div>
       <h3 className="empty-state-title">{title}</h3>
       {description ? (

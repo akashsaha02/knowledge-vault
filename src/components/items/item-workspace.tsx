@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { ItemListCard } from "@/components/items/item-list-card";
 import { ItemDetailToolbar } from "@/components/items/item-detail-toolbar";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { IllustrationName } from "@/components/ui/illustration";
 import { PageHint } from "@/components/onboarding/page-hint";
 import { ContentFade } from "@/components/ui/content-fade";
 import { ItemDetailSkeleton, ItemGridSkeleton, ItemListSkeleton } from "@/components/ui/loading-skeleton";
@@ -43,6 +44,18 @@ import {
 } from "@/features/items/item.actions";
 import { getActionErrorMessage } from "@/lib/action-error";
 import type { ItemStatus, ItemType } from "@/generated/prisma/client";
+
+function emptyIllustrationFor(
+  title: string,
+  status?: ItemStatus,
+): IllustrationName {
+  if (status === "TRASHED" || status === "ARCHIVED") return "empty";
+  if (title === "Notes") return "notes";
+  if (title === "Code" || title === "AI Prompts") return "code";
+  if (title === "Saved Links") return "links";
+  if (title === "Files") return "empty";
+  return "empty";
+}
 
 type ItemWorkspaceProps = {
   workspaceId: string;
@@ -227,6 +240,7 @@ export function ItemWorkspace({
         <div className="item-workspace-empty workspace-empty-pane">
           <EmptyState
             className="workspace-empty-state"
+            illustration="error"
             title="Could not find this item"
             description="It may have been deleted or moved."
             primaryAction={{
@@ -243,6 +257,7 @@ export function ItemWorkspace({
         <div className="item-workspace-empty workspace-empty-pane">
           <EmptyState
             className="workspace-empty-state"
+            illustration={emptyIllustrationFor(title, status)}
             title={`Select a ${ws.itemLabel}`}
             description={`Choose a ${ws.itemLabel} from the sidebar or start a new one.`}
             primaryAction={
@@ -560,6 +575,7 @@ export function ItemWorkspace({
         )
       ) : ws.filteredItems.length === 0 ? (
         <EmptyState
+          illustration={emptyIllustrationFor(title, status)}
           title={
             status === "TRASHED"
               ? "Trash is empty."

@@ -58,6 +58,7 @@ export function TagsPageClient({ workspaceId }: { workspaceId: string }) {
         <PageBodySkeleton />
       ) : tags.length === 0 ? (
         <EmptyState
+          illustration="organize"
           title="No tags yet"
           description="Tags help you filter and find related content quickly."
           primaryAction={{

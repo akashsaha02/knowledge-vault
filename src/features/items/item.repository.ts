@@ -45,10 +45,10 @@ function buildAccessAndQueryFilter(
   return queryFilter ?? (accessIsEmpty ? {} : (accessFilter ?? {}));
 }
 
-export async function findItems(filters: ItemListFilters) {
+function buildItemWhere(filters: ItemListFilters): Prisma.ItemWhereInput {
   const isTrashView = filters.status === "TRASHED";
 
-  const where: Prisma.ItemWhereInput = {
+  return {
     workspaceId: filters.workspaceId,
     ...(isTrashView
       ? { deletedAt: { not: null }, status: "TRASHED" }
@@ -66,9 +66,11 @@ export async function findItems(filters: ItemListFilters) {
     ...(filters.favoritesOnly && { isFavorite: true }),
     ...buildAccessAndQueryFilter(filters),
   };
+}
 
+export async function findItems(filters: ItemListFilters) {
   return db.item.findMany({
-    where,
+    where: buildItemWhere(filters),
     include: {
       tags: { include: { tag: true } },
       project: true,
@@ -77,6 +79,14 @@ export async function findItems(filters: ItemListFilters) {
     orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
     take: filters.limit ?? 50,
     skip: filters.offset ?? 0,
+  });
+}
+
+export async function countItemsGroupedByType(filters: ItemListFilters) {
+  return db.item.groupBy({
+    by: ["type"],
+    where: buildItemWhere(filters),
+    _count: { _all: true },
   });
 }
 

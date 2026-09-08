@@ -10,6 +10,7 @@ import { MobileNav } from "@/components/dashboard/mobile-nav";
 type DashboardShellProps = {
   children: React.ReactNode;
   userName: string;
+  userImage?: string | null;
   workspaceId: string;
   workspaceName: string;
   workspaceCount?: number;
@@ -18,6 +19,7 @@ type DashboardShellProps = {
 export function DashboardShell({
   children,
   userName,
+  userImage,
   workspaceId,
   workspaceName,
   workspaceCount = 1,
@@ -25,10 +27,11 @@ export function DashboardShell({
   return (
     <div className="dashboard-app">
       <div className="dashboard-root">
-        <DashboardSidebar />
+        <DashboardSidebar userName={userName} userImage={userImage} />
         <div className="dashboard-main">
           <DashboardHeader
             userName={userName}
+            userImage={userImage}
             workspaceId={workspaceId}
             workspaceName={workspaceName}
             workspaceCount={workspaceCount}
@@ -38,7 +41,7 @@ export function DashboardShell({
           </main>
           <MobileNav />
         </div>
-        <MobileDrawer />
+        <MobileDrawer userName={userName} userImage={userImage} />
         <CommandPalette workspaceId={workspaceId} />
         <SaveStatusIndicator />
       </div>

@@ -3,6 +3,7 @@
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { CreateMenu } from "@/components/dashboard/create-menu";
 import { DashboardNavMenu } from "@/components/dashboard/nav-menu";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import {
   Sheet,
   SheetContent,
@@ -10,8 +11,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useUiStore } from "@/stores/ui-store";
+import { Settings } from "lucide-react";
+import Link from "next/link";
 
-export function MobileDrawer() {
+export function MobileDrawer({
+  userName,
+  userImage,
+}: {
+  userName: string;
+  userImage?: string | null;
+}) {
   const open = useUiStore((s) => s.mobileNavOpen);
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
 
@@ -36,6 +45,27 @@ export function MobileDrawer() {
             <CreateMenu block onNavigate={() => setMobileNavOpen(false)} />
           </div>
           <DashboardNavMenu onNavigate={() => setMobileNavOpen(false)} />
+          <div className="sider-footer">
+            <Link
+              href="/dashboard/settings"
+              className="nav-link"
+              onClick={() => setMobileNavOpen(false)}
+            >
+              <Settings size={18} strokeWidth={1.75} aria-hidden="true" />
+              <span>Settings</span>
+            </Link>
+            <Link
+              href="/dashboard/settings"
+              className="sider-profile"
+              onClick={() => setMobileNavOpen(false)}
+            >
+              <UserAvatar name={userName} image={userImage} size="sm" />
+              <span className="sider-profile-copy">
+                <span className="sider-profile-name">{userName}</span>
+                <span className="sider-profile-meta">Account &amp; theme</span>
+              </span>
+            </Link>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

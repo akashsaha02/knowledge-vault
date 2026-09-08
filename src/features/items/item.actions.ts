@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   archiveItem,
+  countAccessibleItemsByType,
   createItemForUser,
   getItemRevisions,
   listAccessibleItems,
@@ -29,6 +30,11 @@ function revalidateItemPaths(type?: ItemType) {
   if (route) {
     revalidatePath(route.split("?")[0]);
   }
+}
+
+export async function countItemsByTypeAction(workspaceId: string) {
+  const user = await requireUser();
+  return countAccessibleItemsByType(user.id, workspaceId);
 }
 
 export async function listItemsAction(filters: ItemListFilters) {

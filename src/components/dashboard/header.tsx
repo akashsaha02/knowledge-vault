@@ -18,7 +18,7 @@ import { SearchShortcutKbd } from "@/components/dashboard/search-shortcut-kbd";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { WorkspaceSwitcher } from "@/components/dashboard/workspace-switcher";
 import { useTheme } from "@/components/providers/theme-context";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,11 +32,13 @@ import { useUiStore } from "@/stores/ui-store";
 
 export function DashboardHeader({
   userName,
+  userImage,
   workspaceId,
   workspaceName,
   workspaceCount = 1,
 }: {
   userName: string;
+  userImage?: string | null;
   workspaceId: string;
   workspaceName?: string;
   workspaceCount?: number;
@@ -47,13 +49,6 @@ export function DashboardHeader({
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const setCommandPaletteOpen = useUiStore((s) => s.setCommandPaletteOpen);
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
-
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 
   return (
     <header className="dashboard-header">
@@ -118,9 +113,7 @@ export function DashboardHeader({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button type="button" className="dashboard-user-btn" aria-label="Account menu">
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                </Avatar>
+                <UserAvatar name={userName} image={userImage} size="sm" />
                 <span className="dashboard-user-name">{userName}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-[var(--muted)] hidden sm:block" />
               </button>

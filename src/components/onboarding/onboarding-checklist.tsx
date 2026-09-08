@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, X } from "lucide-react";
+import { BookOpen, CheckCircle2, Folder, Link as LinkIcon, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,15 @@ import {
   type ChecklistState,
   type ChecklistTask,
 } from "@/lib/onboarding-storage";
+
+const TASK_ICONS = {
+  note: BookOpen,
+  bookmark: LinkIcon,
+  search: Search,
+  project: Folder,
+  snippet: BookOpen,
+  tag: Folder,
+} as const;
 
 type OnboardingChecklistProps = {
   hasNote?: boolean;
@@ -86,6 +95,7 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
       <ul className="onboarding-checklist-list">
         {CHECKLIST_TASKS.map((task) => {
           const done = state.completed.includes(task.id);
+          const TaskIcon = TASK_ICONS[task.id] ?? BookOpen;
           return (
             <li
               key={task.id}
@@ -93,9 +103,9 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
             >
               <span className="onboarding-checklist-icon" aria-hidden="true">
                 {done ? (
-                  <CheckCircle2 className="h-4 w-4 text-[var(--brand)]" />
+                  <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />
                 ) : (
-                  <span className="onboarding-checklist-pending" />
+                  <TaskIcon className="h-4 w-4" strokeWidth={1.75} />
                 )}
               </span>
               {done ? (
