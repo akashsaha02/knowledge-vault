@@ -24,7 +24,7 @@ export default async function ProjectDetailPage({
         project.description ??
         "All notes, snippets, and links in this project."
       }
-      emptyDescription="No items in this project yet. Assign items from their details panel."
+      emptyDescription="Nothing in this project yet."
       projectId={project.id}
     />
   );

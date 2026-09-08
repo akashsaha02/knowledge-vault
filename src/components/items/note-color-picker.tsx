@@ -26,7 +26,8 @@ export function NoteColorPicker({ value, onChange, className }: NoteColorPickerP
             style={
               {
                 "--swatch-accent": color.border,
-                background: color.border,
+                "--swatch-bg": color.bg,
+                background: color.bg,
               } as CSSProperties
             }
             onClick={() => onChange(color.id)}

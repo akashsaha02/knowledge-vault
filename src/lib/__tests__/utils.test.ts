@@ -17,7 +17,7 @@ describe("slugify", () => {
 describe("command risk detection", () => {
   it("flags destructive commands", () => {
     expect(detectCommandRisk("rm -rf /")).toBe("destructive");
-    expect(RISK_LABELS.destructive).toBe("Destructive");
+    expect(RISK_LABELS.destructive).toBe("Potentially destructive");
   });
 
   it("flags sudo commands for review", () => {

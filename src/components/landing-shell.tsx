@@ -10,13 +10,13 @@ const FEATURES = [
   {
     icon: BookOpen,
     title: "Write notes",
-    description: "Capture thoughts and ideas in a focused editor with bold color accents.",
+    description: "Capture thoughts in a calm editor. Organize later.",
     accent: "notes" as const,
   },
   {
     icon: Code2,
     title: "Save code & commands",
-    description: "Syntax-highlighted snippets and a terminal-style command vault.",
+    description: "Keep reusable snippets and terminal commands ready to copy.",
     accent: "code" as const,
   },
   {
@@ -54,11 +54,11 @@ export function LandingShell() {
         <div className="landing-hero-content">
           <div className="landing-hero-badge">
             <Sparkles size={14} className="text-[var(--brand)]" aria-hidden="true" />
-            Notes, links &amp; code — free to use
+            Notes, links &amp; code — a quiet personal workspace
           </div>
           <h1 className="landing-hero-title">{BRAND_TAGLINE}</h1>
           <p className="landing-hero-text">
-            Notes, links, and code — organised in your own private corner of the web.
+            Capture notes, code, links and ideas. Find them when you need them.
           </p>
           <div className="landing-hero-actions">
             <Button size="lg" asChild>

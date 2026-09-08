@@ -90,6 +90,7 @@ export function ItemListCard({
         aria-label={`${displayTitle}, ${type ?? "item"}`}
         aria-current={isActive ? "true" : undefined}
         className={`item-list-card${isActive ? " item-list-card-active" : ""}${isSidebar ? " item-list-card--sidebar" : ""}${noteColorId ? " item-list-card--colored" : ""}`}
+        data-note-color={noteColorId || undefined}
         style={
           noteColorId
             ? isSidebar
@@ -166,7 +167,7 @@ export function ItemListCard({
                 ) : (
                   <Bookmark className="h-4 w-4" />
                 )}
-                {isFavorite ? "Remove bookmark" : "Bookmark"}
+                {isFavorite ? "Remove favorite" : "Favorite"}
               </DropdownMenuItem>
             ) : null}
             {onArchive ? (
@@ -186,7 +187,7 @@ export function ItemListCard({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onDelete} className="text-[var(--destructive)]">
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  Move to Trash
                 </DropdownMenuItem>
               </>
             ) : null}

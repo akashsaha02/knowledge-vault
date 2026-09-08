@@ -9,7 +9,7 @@ import { useUiStore } from "@/stores/ui-store";
 const LABELS = {
   saving: "Saving…",
   saved: "Saved",
-  error: "Save failed",
+  error: "Couldn't save",
 } as const;
 
 export function SaveStatusIndicator() {

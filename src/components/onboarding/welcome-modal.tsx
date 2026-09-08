@@ -40,12 +40,10 @@ export function WelcomeModal() {
           <DialogTitle>Welcome to {BRAND_NAME}</DialogTitle>
         </DialogHeader>
         <p className="welcome-modal-text">
-          This is your place to save ideas, notes, links, and projects. You can
-          write notes, save useful websites, store code, and keep everything
-          organised.
+          Keep notes, code, links and useful things together.
         </p>
         <p className="welcome-modal-text">
-          Everything you save stays private and only you can see it.
+          Press ⌘K (or Ctrl+K) anytime to search.
         </p>
         <DialogFooter>
           <Button variant="secondary" onClick={close}>
@@ -57,7 +55,7 @@ export function WelcomeModal() {
               router.push("/dashboard/notes?new=1");
             }}
           >
-            Write my first note
+            Create something
           </Button>
         </DialogFooter>
       </DialogContent>

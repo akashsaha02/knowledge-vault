@@ -46,7 +46,7 @@ export function TagsPageClient({ workspaceId }: { workspaceId: string }) {
   return (
     <PageShell
       title="Tags"
-      description="Label and filter items across your vault."
+      description="Label items so you can filter them later. You can also add tags from Details on any item."
       actions={
         <Button onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4" />
@@ -71,7 +71,7 @@ export function TagsPageClient({ workspaceId }: { workspaceId: string }) {
             {tags.map((tag) => (
               <article key={tag.id} className="key-card">
                 <Link
-                  href={`/dashboard/search?q=${encodeURIComponent(tag.name)}`}
+                  href={`/dashboard/search?tag=${encodeURIComponent(tag.id)}`}
                   className="block text-inherit no-underline"
                 >
                   <h3 className="key-card-title">{tag.name}</h3>

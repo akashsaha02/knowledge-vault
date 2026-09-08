@@ -18,14 +18,14 @@ type DashboardItemPageProps = {
 };
 
 const PAGE_DESCRIPTIONS: Record<string, string> = {
-  Notes: "Write and organize your notes with a rich text editor.",
-  Code: "Save and reuse code snippets and terminal commands.",
-  "Saved Links": "Keep track of useful links and web resources.",
-  "AI Prompts": "Manage AI prompts and templates.",
-  Files: "Upload and reference file attachments.",
-  Favorites: "Quick access to your starred items.",
-  Archive: "Items you've archived but haven't deleted.",
-  Trash: "Deleted items — restore or permanently remove.",
+  Notes: "Capture something you don't want to lose.",
+  Code: "Save snippets and terminal commands you want to reuse.",
+  "Saved Links": "Save pages you want to find again.",
+  "AI Prompts": "Keep reusable prompts with {{variables}} you can copy.",
+  Files: "Upload a file and keep it with the rest of your Nook.",
+  Favorites: "Things you marked as important.",
+  Archive: "Removed from your active workspace without deleting.",
+  Trash: "Items waiting to be restored or deleted permanently.",
 };
 
 export async function DashboardItemPage({

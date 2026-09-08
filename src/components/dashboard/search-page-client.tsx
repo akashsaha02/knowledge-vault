@@ -3,8 +3,9 @@
 import { Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageShell } from "@/components/dashboard/page-shell";
+import { PageHint } from "@/components/onboarding/page-hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,12 +37,18 @@ const typeLabels: Record<string, string> = {
   NOTE: "Notes",
   SNIPPET: "Snippets",
   COMMAND: "Commands",
-  BOOKMARK: "Bookmarks",
+  BOOKMARK: "Saved Links",
   PROMPT: "Prompts",
   FILE: "Files",
 };
 
-const ALL_TYPES = "__all__";
+const QUICK_FILTERS: { id: string; label: string; type?: ItemType }[] = [
+  { id: "all", label: "All" },
+  { id: "NOTE", label: "Notes", type: "NOTE" },
+  { id: "SNIPPET", label: "Code", type: "SNIPPET" },
+  { id: "BOOKMARK", label: "Links", type: "BOOKMARK" },
+];
+
 const ALL_PROJECTS = "__all_projects__";
 const ALL_TAGS = "__all_tags__";
 
@@ -57,11 +64,13 @@ export function SearchPageClient({
   tags,
 }: SearchPageClientProps) {
   const searchParams = useSearchParams();
+  const inputRef = useRef<HTMLInputElement>(null);
   const initialQuery = searchParams.get("q") ?? "";
+  const initialTagId = searchParams.get("tag") ?? undefined;
   const [query, setQuery] = useState(initialQuery);
   const [type, setType] = useState<ItemType | undefined>();
   const [projectId, setProjectId] = useState<string | undefined>();
-  const [tagId, setTagId] = useState<string | undefined>();
+  const [tagId, setTagId] = useState<string | undefined>(initialTagId);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -105,6 +114,10 @@ export function SearchPageClient({
   );
 
   useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       if (query.trim().length >= 2) {
         void runSearch(query);
@@ -114,23 +127,28 @@ export function SearchPageClient({
   }, [query, runSearch]);
 
   const grouped = useMemo(() => groupByType(results), [results]);
+  const activeChip = type ?? "all";
 
   return (
     <PageShell
       title="Search"
-      description="Find notes, snippets, and more across your vault."
+      description="Search across everything in your Nook."
     >
+      <PageHint id="search">
+        Search across everything in your Nook.
+      </PageHint>
       <div className="search-bar">
         <div className="relative flex flex-1 items-center">
           <Input
-            className="pr-20"
-            placeholder="Search your vault..."
+            ref={inputRef}
+            className="pr-20 h-11 text-base"
+            placeholder="Search Nook..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") void runSearch(query);
             }}
-            aria-label="Search your vault"
+            aria-label="Search Nook"
           />
           {query ? (
             <button
@@ -156,71 +174,77 @@ export function SearchPageClient({
             Search
           </Button>
         </div>
-        <Select
-          value={type ?? ALL_TYPES}
-          onValueChange={(value) => {
-            const nextType = value === ALL_TYPES ? undefined : (value as ItemType);
-            setType(nextType);
-            if (query.trim()) void runSearch(query, nextType, projectId, tagId);
-          }}
-        >
-          <SelectTrigger className="min-w-[160px]" aria-label="Filter by type">
-            <SelectValue placeholder="All types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_TYPES}>All types</SelectItem>
-            {Object.entries(typeLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {projects.length > 0 ? (
-          <Select
-            value={projectId ?? ALL_PROJECTS}
-            onValueChange={(value) => {
-              const next = value === ALL_PROJECTS ? undefined : value;
-              setProjectId(next);
-              if (query.trim()) void runSearch(query, type, next, tagId);
-            }}
-          >
-            <SelectTrigger className="min-w-[160px]" aria-label="Filter by project">
-              <SelectValue placeholder="All projects" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
-        {tags.length > 0 ? (
-          <Select
-            value={tagId ?? ALL_TAGS}
-            onValueChange={(value) => {
-              const next = value === ALL_TAGS ? undefined : value;
-              setTagId(next);
-              if (query.trim()) void runSearch(query, type, projectId, next);
-            }}
-          >
-            <SelectTrigger className="min-w-[160px]" aria-label="Filter by tag">
-              <SelectValue placeholder="All tags" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_TAGS}>All tags</SelectItem>
-              {tags.map((tag) => (
-                <SelectItem key={tag.id} value={tag.id}>
-                  {tag.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
       </div>
+
+      <div className="search-type-chips" role="group" aria-label="Filter by type">
+        {QUICK_FILTERS.map((filter) => (
+          <button
+            key={filter.id}
+            type="button"
+            className={`search-type-chip${activeChip === filter.id ? " search-type-chip--active" : ""}`}
+            aria-pressed={activeChip === filter.id}
+            onClick={() => {
+              const nextType = filter.type;
+              setType(nextType);
+              if (query.trim()) void runSearch(query, nextType, projectId, tagId);
+            }}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
+      {projects.length > 0 || tags.length > 0 ? (
+        <details className="search-filters-more">
+          <summary className="search-filters-more-summary">More filters</summary>
+          <div className="search-filters-more-body">
+            {projects.length > 0 ? (
+              <Select
+                value={projectId ?? ALL_PROJECTS}
+                onValueChange={(value) => {
+                  const next = value === ALL_PROJECTS ? undefined : value;
+                  setProjectId(next);
+                  if (query.trim()) void runSearch(query, type, next, tagId);
+                }}
+              >
+                <SelectTrigger className="min-w-[160px]" aria-label="Filter by project">
+                  <SelectValue placeholder="All projects" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            {tags.length > 0 ? (
+              <Select
+                value={tagId ?? ALL_TAGS}
+                onValueChange={(value) => {
+                  const next = value === ALL_TAGS ? undefined : value;
+                  setTagId(next);
+                  if (query.trim()) void runSearch(query, type, projectId, next);
+                }}
+              >
+                <SelectTrigger className="min-w-[160px]" aria-label="Filter by tag">
+                  <SelectValue placeholder="All tags" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_TAGS}>All tags</SelectItem>
+                  {tags.map((tag) => (
+                    <SelectItem key={tag.id} value={tag.id}>
+                      {tag.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
 
       {loading ? (
         <div className="search-loading">
@@ -229,14 +253,14 @@ export function SearchPageClient({
         </div>
       ) : !hasSearched ? (
         <EmptyState
-          title="Search your vault"
-          description="Type at least 2 characters to search as you type, or press Enter."
+          title="Search your Nook"
+          description="Type to search notes, code, and saved links."
           shortcut="Ctrl+K"
         />
       ) : results.length === 0 ? (
         <EmptyState
           title={query ? `No results for "${query}"` : "No results"}
-          description="Try different keywords or remove filters."
+          description="Try different words, or clear filters."
           primaryAction={{
             label: "Clear search",
             onClick: () => {

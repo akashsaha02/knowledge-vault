@@ -84,10 +84,10 @@ export function ShareItemDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Share this item</DialogTitle>
+          <DialogTitle>Share</DialogTitle>
           <DialogDescription>
-            Create a read-only link for “{itemTitle || "Untitled"}”. Anyone with
-            the link can view it.
+            Create a link for “{itemTitle || "Untitled"}”. Anyone with the link
+            can view it. Optional: password, expiry, and whether copying is allowed.
           </DialogDescription>
         </DialogHeader>
 
@@ -96,7 +96,7 @@ export function ShareItemDialog({
             <Label htmlFor="share-url">Public link</Label>
             <div className="flex gap-2">
               <Input id="share-url" readOnly value={shareUrl} />
-              <Button type="button" onClick={() => void copyToClipboard(shareUrl)}>
+              <Button type="button" onClick={() => void copyToClipboard(shareUrl, "Link copied")}>
                 Copy
               </Button>
             </div>

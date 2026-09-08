@@ -4,7 +4,7 @@ export default function TrashPage() {
   return (
     <DashboardItemPage
       title="Trash"
-      emptyDescription="Deleted items will appear here for a while. You can bring them back."
+      emptyDescription="Items you move to Trash appear here until you restore or delete them permanently."
       status="TRASHED"
     />
   );

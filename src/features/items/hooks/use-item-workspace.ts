@@ -363,7 +363,14 @@ export function useItemWorkspace({
     if (!result) return;
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     if (itemId === item.id) closeDetail();
-    toast.success("Archived");
+    toast.success("Archived", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          void restoreItemAction(workspaceId, item.id).then(() => void loadItems());
+        },
+      },
+    });
   }
 
   async function handleCardRestore(item: ItemRecord) {
@@ -385,7 +392,14 @@ export function useItemWorkspace({
     if (!result) return;
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     if (itemId === item.id) closeDetail();
-    toast.success("Moved to Trash");
+    toast.success("Moved to Trash", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          void restoreItemAction(workspaceId, item.id).then(() => void loadItems());
+        },
+      },
+    });
     setCardDeleteTarget(null);
   }
 

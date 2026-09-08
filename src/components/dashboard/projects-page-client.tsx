@@ -12,7 +12,7 @@ export function ProjectsPageClient({ workspaceId }: { workspaceId: string }) {
     <ResourceListPage
       workspaceId={workspaceId}
       title="Projects"
-      description="Group related notes, snippets, and files into focused projects."
+      description="Group things related to something you're working on."
       createLabel="New project"
       emptyTitle="No projects yet"
       emptyActionLabel="Create project"

@@ -68,7 +68,7 @@ export function QuickCapture({ workspaceId }: QuickCaptureProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onFocus={() => setExpanded(true)}
-        placeholder="Take a note..."
+        placeholder="What do you want to remember?"
         rows={expanded ? 4 : 1}
         className="quick-capture-input"
         onKeyDown={(e) => {

@@ -9,14 +9,36 @@ export type NavItem = {
   label: string;
 };
 
-/** Primary navigation */
-export const MAIN_NAV: NavItem[] = [
-  { key: "/dashboard", label: "Home" },
-  { key: "/dashboard/notes", label: "Notes" },
-  { key: "/dashboard/snippets", label: "Code" },
-  { key: "/dashboard/bookmarks", label: "Saved Links" },
-  { key: "/dashboard/projects", label: "Projects" },
+export type NavGroup = {
+  id: string;
+  label?: string;
+  items: NavItem[];
+};
+
+/** Primary navigation, grouped for hierarchy without extra destinations. */
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    id: "home",
+    items: [{ key: "/dashboard", label: "Home" }],
+  },
+  {
+    id: "library",
+    label: "Library",
+    items: [
+      { key: "/dashboard/notes", label: "Notes" },
+      { key: "/dashboard/snippets", label: "Code" },
+      { key: "/dashboard/bookmarks", label: "Saved Links" },
+    ],
+  },
+  {
+    id: "organize",
+    label: "Organize",
+    items: [{ key: "/dashboard/projects", label: "Projects" }],
+  },
 ];
+
+/** Primary navigation */
+export const MAIN_NAV: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
 
 /** Quick-access items shown as icons when sidebar is collapsed */
 export const COLLAPSED_MORE_NAV: NavItem[] = [
@@ -26,14 +48,14 @@ export const COLLAPSED_MORE_NAV: NavItem[] = [
 
 /** Secondary navigation — "More" section */
 export const MORE_NAV: NavItem[] = [
-  { key: "/dashboard/search", label: "Search" },
-  { key: "/dashboard/files", label: "Files" },
-  { key: "/dashboard/favorites", label: "Favorites" },
   { key: "/dashboard/prompts", label: "AI Prompts" },
+  { key: "/dashboard/files", label: "Files" },
   { key: "/dashboard/collections", label: "Collections" },
   { key: "/dashboard/tags", label: "Tags" },
+  { key: "/dashboard/favorites", label: "Favorites" },
   { key: "/dashboard/archive", label: "Archive" },
   { key: "/dashboard/trash", label: "Trash" },
+  { key: "/dashboard/search", label: "Search" },
 ];
 
 export const ALL_NAV = [...MAIN_NAV, ...MORE_NAV];

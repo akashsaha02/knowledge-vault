@@ -161,8 +161,8 @@ describe("item lifecycle", () => {
 describe("item type registry", () => {
   it("keeps create surfaces on one source of truth", () => {
     const keys = getCreateMenuItems().map((item) => item.key);
-    expect(keys).toEqual(["note", "bookmark", "snippet", "command", "file"]);
-    expect(ITEM_TYPE_REGISTRY.PROMPT.showInCreateMenu).toBe(false);
+    expect(keys).toEqual(["note", "snippet", "command", "bookmark", "prompt", "file"]);
+    expect(ITEM_TYPE_REGISTRY.PROMPT.showInCreateMenu).toBe(true);
   });
 
   it("preserves existing create URLs", () => {

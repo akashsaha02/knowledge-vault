@@ -6,8 +6,8 @@ export default function SnippetsPage() {
     <DashboardItemPage
       types={CODE_ITEM_TYPES}
       title="Code"
-      description="Snippets and terminal commands in one place."
-      emptyDescription="Save the snippet you'll need again."
+      description="Save snippets and terminal commands you want to reuse."
+      emptyDescription="Keep useful snippets and commands here."
     />
   );
 }

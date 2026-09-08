@@ -5,7 +5,7 @@ export default function BookmarksPage() {
     <DashboardItemPage
       type="BOOKMARK"
       title="Saved Links"
-      emptyDescription="Keep useful pages close."
+      emptyDescription="Save pages you want to find again."
     />
   );
 }

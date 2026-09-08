@@ -33,8 +33,7 @@ export default async function DashboardPage() {
         plainText: item.plainText,
         updatedAt: item.updatedAt,
         isPinned: item.isPinned,
-        isFavorite: item.isFavorite,
-        metadata: item.metadata,
+        projectName: item.project?.name ?? undefined,
       }))}
       stats={{
         hasNote: notes.length > 0,

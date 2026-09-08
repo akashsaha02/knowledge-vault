@@ -6,6 +6,7 @@ import {
   Link as LinkIcon,
   Paperclip,
   Plus,
+  Sparkles,
   Terminal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ const CREATE_ICONS: Record<string, React.ReactNode> = {
   bookmark: <LinkIcon className="h-4 w-4" />,
   snippet: <Code className="h-4 w-4" />,
   command: <Terminal className="h-4 w-4" />,
+  prompt: <Sparkles className="h-4 w-4" />,
   file: <Paperclip className="h-4 w-4" />,
 };
 
@@ -50,17 +52,21 @@ export function CreateMenu({
           {collapsed ? null : "New"}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent align="start" className="w-64">
         {CREATE_LINKS.map((item) => (
           <DropdownMenuItem
             key={item.key}
+            className="create-menu-item"
             onClick={() => {
               router.push(item.href);
               onNavigate?.();
             }}
           >
             {CREATE_ICONS[item.key]}
-            {item.label}
+            <span className="create-menu-item-copy">
+              <span className="create-menu-item-label">{item.label}</span>
+              <span className="create-menu-item-desc">{item.description}</span>
+            </span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

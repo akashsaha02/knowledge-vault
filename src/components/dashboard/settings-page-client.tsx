@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Database, Share2, SlidersHorizontal, User } from "lucide-react";
+import { Database, Palette, Share2, SlidersHorizontal, User } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { PageShell } from "@/components/dashboard/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   exportJsonAction,
   exportZipAction,
@@ -30,7 +31,7 @@ export function SettingsPageClient({
   return (
     <PageShell
       title="Settings"
-      description="Account, data, and vault preferences."
+      description="Account, data, and how Nook looks."
     >
       <div className="page-shell-constrained space-y-8">
         <section aria-labelledby="settings-account">
@@ -57,7 +58,7 @@ export function SettingsPageClient({
             </CardHeader>
             <CardContent>
               <p className="text-[var(--muted)] mb-4">
-                Download a copy of your vault. JSON is the format Nook can import again.
+                Download a copy of your Nook. JSON is the format you can import again.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -124,6 +125,18 @@ export function SettingsPageClient({
           </Card>
         </section>
 
+        <section aria-labelledby="settings-preferences">
+          <h2 id="settings-preferences" className="settings-section-title">
+            <Palette className="h-4 w-4" aria-hidden="true" /> Preferences
+          </h2>
+          <Card className="!border-[var(--border)] mt-3">
+            <CardContent className="pt-6">
+              <p className="text-[var(--muted)] mb-3">Appearance</p>
+              <ThemeToggle />
+            </CardContent>
+          </Card>
+        </section>
+
         <section aria-labelledby="settings-sharing">
           <h2 id="settings-sharing" className="settings-section-title">
             <Share2 className="h-4 w-4" aria-hidden="true" /> Sharing
@@ -131,8 +144,8 @@ export function SettingsPageClient({
           <Card className="!border-[var(--border)] mt-3">
             <CardContent className="pt-6">
               <p className="text-[var(--muted)]">
-                Sharing is item-level. Open a note, snippet, or link and use the
-                share icon in the toolbar to create a password-optional public link.
+                Sharing happens from the item itself. Open something and choose Share
+                to create a link with optional password, expiry, and copy permission.
               </p>
             </CardContent>
           </Card>

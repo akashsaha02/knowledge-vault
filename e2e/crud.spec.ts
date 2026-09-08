@@ -42,7 +42,7 @@ test.describe("Authenticated flows", () => {
       page.getByRole("heading", { name: projectName, level: 1 }),
     ).toBeVisible();
     await expect(
-      page.getByText(/No items in this project yet/i),
+      page.getByText(/Nothing in this project yet/i),
     ).toBeVisible();
   });
 

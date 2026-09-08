@@ -1,9 +1,9 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { copyToClipboard } from "@/lib/clipboard";
 
 type BookmarkViewerProps = {
   url: string;
@@ -14,6 +14,14 @@ type BookmarkViewerProps = {
   previewImageUrl?: string;
 };
 
+function domainFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 export function BookmarkViewer({
   url,
   title,
@@ -22,47 +30,56 @@ export function BookmarkViewer({
   faviconUrl,
   previewImageUrl,
 }: BookmarkViewerProps) {
+  const domain = siteName || domainFromUrl(url);
+
   return (
-    <Card className="overflow-hidden">
-      {previewImageUrl && (
-        <div className="relative h-40 w-full mb-4">
+    <article className="saved-link-card">
+      {previewImageUrl ? (
+        <div className="saved-link-preview">
           <Image
             src={previewImageUrl}
-            alt={title}
+            alt=""
             fill
-            className="object-cover rounded"
+            className="object-cover"
             unoptimized
           />
         </div>
-      )}
-      <CardContent className={previewImageUrl ? "pt-0" : "pt-6"}>
-        <div className="flex items-start gap-3">
-          {faviconUrl && (
-            <Image src={faviconUrl} alt="" width={20} height={20} unoptimized />
-          )}
-          <div className="flex-1">
-            <h4 className="mb-1 text-lg font-semibold">
-              {title}
-            </h4>
-            {siteName && (
-              <p className="text-sm text-[var(--muted)]">{siteName}</p>
-            )}
-            {description && (
-              <p className="mt-2 mb-0">{description}</p>
-            )}
-            <Button
-              variant="link"
-              className="!px-0 mt-2 h-auto"
-              asChild
-            >
-              <a href={url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4" />
-                {url}
-              </a>
-            </Button>
-          </div>
+      ) : null}
+      <div className="saved-link-card-top">
+        {faviconUrl ? (
+          <Image
+            src={faviconUrl}
+            alt=""
+            width={20}
+            height={20}
+            className="saved-link-favicon"
+            unoptimized
+          />
+        ) : null}
+        <div>
+          <h4 className="saved-link-title">{title || "Untitled link"}</h4>
+          <p className="saved-link-domain">{domain}</p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      {description ? (
+        <p className="saved-link-description">{description}</p>
+      ) : null}
+      <div className="saved-link-actions">
+        <Button asChild>
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-4 w-4" />
+            Open
+          </a>
+        </Button>
+        <Button
+          variant="secondary"
+          type="button"
+          onClick={() => void copyToClipboard(url, "Link copied")}
+        >
+          <Copy className="h-4 w-4" />
+          Copy link
+        </Button>
+      </div>
+    </article>
   );
 }

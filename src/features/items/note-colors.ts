@@ -1,33 +1,45 @@
 import type { CSSProperties } from "react";
 
 export const NOTE_COLORS = [
-  { id: "honey", label: "Honey", bg: "#2a1f0a", border: "#f59e0b", text: "#fcd34d" },
-  { id: "sky", label: "Sky", bg: "#0f1a2e", border: "#3b82f6", text: "#93c5fd" },
-  { id: "mint", label: "Mint", bg: "#0a1f18", border: "#10b981", text: "#6ee7b7" },
-  { id: "lilac", label: "Lilac", bg: "#1a1030", border: "#8b5cf6", text: "#c4b5fd" },
-  { id: "coral", label: "Wine", bg: "#1a0a14", border: "#660033", text: "#d4729a" },
-  { id: "blush", label: "Blush", bg: "#2a1020", border: "#ec4899", text: "#f9a8d4" },
-  { id: "slate", label: "Slate", bg: "#1a1f28", border: "#64748b", text: "#cbd5e1" },
-  { id: "cream", label: "Cream", bg: "#1e1a16", border: "#a8a29e", text: "#e7e5e4" },
+  { id: "cream", label: "Cream", bg: "#FFF4D8", border: "#E6D4A8", text: "#443B2C" },
+  { id: "rose", label: "Rose", bg: "#FBE9EC", border: "#E8C5CC", text: "#493338" },
+  { id: "lavender", label: "Lavender", bg: "#EEEAF8", border: "#CFC6E6", text: "#393447" },
+  { id: "sage", label: "Sage", bg: "#E8F0E5", border: "#C5D6C0", text: "#344033" },
+  { id: "sky", label: "Sky", bg: "#E8F1F6", border: "#C3D5E0", text: "#334047" },
+  { id: "neutral", label: "Neutral", bg: "#F3F1EE", border: "#D8D4CE", text: "#383533" },
 ] as const;
 
 export type NoteColorId = (typeof NOTE_COLORS)[number]["id"];
 
 export const DEFAULT_NOTE_COLOR: NoteColorId = "cream";
 
+const LEGACY_COLOR_MAP: Record<string, NoteColorId> = {
+  honey: "cream",
+  mint: "sage",
+  lilac: "lavender",
+  coral: "rose",
+  blush: "rose",
+  slate: "neutral",
+};
+
 const LAST_NOTE_COLOR_KEY = "nook-last-note-color";
+
+export function resolveNoteColorId(id?: string | null): NoteColorId {
+  if (id && NOTE_COLORS.some((color) => color.id === id)) {
+    return id as NoteColorId;
+  }
+  if (id && LEGACY_COLOR_MAP[id]) return LEGACY_COLOR_MAP[id];
+  return DEFAULT_NOTE_COLOR;
+}
 
 export function readLastNoteColor(): NoteColorId {
   if (typeof window === "undefined") return DEFAULT_NOTE_COLOR;
   try {
     const stored = localStorage.getItem(LAST_NOTE_COLOR_KEY);
-    if (stored && NOTE_COLORS.some((c) => c.id === stored)) {
-      return stored as NoteColorId;
-    }
+    return resolveNoteColorId(stored);
   } catch {
-    /* ignore */
+    return DEFAULT_NOTE_COLOR;
   }
-  return DEFAULT_NOTE_COLOR;
 }
 
 export function saveLastNoteColor(id: NoteColorId) {
@@ -40,25 +52,23 @@ export function saveLastNoteColor(id: NoteColorId) {
 }
 
 export function getNoteColorById(id?: string | null) {
-  return NOTE_COLORS.find((c) => c.id === id) ?? NOTE_COLORS.find((c) => c.id === DEFAULT_NOTE_COLOR)!;
+  const resolved = resolveNoteColorId(id);
+  return NOTE_COLORS.find((color) => color.id === resolved)!;
 }
 
 export function getNoteColorStyle(id?: string | null): CSSProperties {
   const color = getNoteColorById(id);
   return {
-    ["--note-color-bg" as string]: color.bg,
-    ["--note-color-border" as string]: color.border,
-    ["--note-color-text" as string]: color.text,
-    background: color.bg,
-    borderColor: color.border,
-    color: color.text,
+    ["--note-color-bg" as string]: `var(--note-${color.id}-bg)`,
+    ["--note-color-border" as string]: `var(--note-${color.id}-border)`,
+    ["--note-color-text" as string]: `var(--note-${color.id}-text)`,
   };
 }
 
 export function getNoteColorSidebarStyle(id?: string | null): CSSProperties {
   const color = getNoteColorById(id);
   return {
-    borderLeftColor: color.border,
-    background: `color-mix(in srgb, ${color.bg} 70%, var(--card))`,
+    borderLeftColor: `var(--note-${color.id}-border)`,
+    background: `color-mix(in srgb, var(--note-${color.id}-bg) 70%, var(--surface))`,
   };
 }

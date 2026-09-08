@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Code2, Folder, Link as LinkIcon } from "lucide-react";
+import { BookOpen, Code2, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist";
@@ -19,6 +19,7 @@ type DashboardItem = {
   plainText: string | null;
   updatedAt: Date | string;
   isPinned?: boolean;
+  projectName?: string | null;
 };
 
 type DashboardHomeProps = {
@@ -34,24 +35,33 @@ type DashboardHomeProps = {
   };
 };
 
-const QUICK_LINKS = [
-  { href: "/dashboard/notes?new=1", label: "Note", icon: BookOpen },
-  { href: "/dashboard/bookmarks?new=1", label: "Link", icon: LinkIcon },
-  { href: "/dashboard/snippets?new=1", label: "Code", icon: Code2 },
-  { href: "/dashboard/projects", label: "Project", icon: Folder },
-] as const;
-
-function getGreeting(userName: string): string {
-  const hour = new Date().getHours();
-  const name = userName.split(" ")[0];
-  if (hour < 12) return `Good morning, ${name}`;
-  if (hour < 17) return `Good afternoon, ${name}`;
-  return `Good evening, ${name}`;
-}
-
 function displayTitle(title: string): string {
   if (!title || title.startsWith("Untitled")) return "Untitled";
   return title;
+}
+
+function ItemRow({
+  item,
+  onOpen,
+}: {
+  item: DashboardItem;
+  onOpen: () => void;
+}) {
+  return (
+    <li>
+      <button type="button" className="home-recent-row" onClick={onOpen}>
+        <CategoryChip type={item.type} showIcon={false} />
+        <span className="home-recent-title">{displayTitle(item.title)}</span>
+        {item.plainText ? (
+          <span className="home-recent-preview">{item.plainText}</span>
+        ) : null}
+        <span className="home-recent-meta">
+          {item.projectName ? `${item.projectName} · ` : ""}
+          {formatRelativeTime(item.updatedAt)}
+        </span>
+      </button>
+    </li>
+  );
 }
 
 export function DashboardHome({
@@ -63,6 +73,8 @@ export function DashboardHome({
   const router = useRouter();
   const pinned = items.filter((item) => item.isPinned);
   const recents = items.filter((item) => !item.isPinned).slice(0, 8);
+  const isNew = items.length === 0;
+  const firstName = userName.split(" ")[0];
 
   return (
     <div className="home-dashboard">
@@ -70,8 +82,22 @@ export function DashboardHome({
 
       <header className="home-hero">
         <div className="home-hero-text">
-          <h1 className="home-greeting">{getGreeting(userName)}</h1>
-          <p className="home-subline">Capture an idea, link, or snippet — it&apos;s saved instantly.</p>
+          {isNew ? (
+            <>
+              <p className="home-welcome-kicker">Welcome to Nook</p>
+              <h1 className="home-greeting">Your space for things worth keeping.</h1>
+              <p className="home-subline">
+                Capture notes, code, links and ideas. Find them when you need them.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="home-greeting">Welcome back, {firstName}</h1>
+              <p className="home-subline">
+                Capture something, or continue where you left off.
+              </p>
+            </>
+          )}
         </div>
         <QuickCapture workspaceId={workspaceId} />
       </header>
@@ -84,86 +110,87 @@ export function DashboardHome({
         hasTag={stats.hasTag}
       />
 
-      <section className="home-quick-links" aria-label="Quick create">
-        {QUICK_LINKS.map((link) => {
-          const Icon = link.icon;
-          return (
-            <Link key={link.href} href={link.href} className="home-quick-link">
-              <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
-              <span>{link.label}</span>
-            </Link>
-          );
-        })}
-      </section>
-
-      {items.length === 0 ? (
+      {isNew ? (
         <EmptyState
           className="home-empty-state"
-          title="Your nook is empty"
-          description="Start with a note, saved link, or code snippet. Everything you create shows up here."
+          title="Start your Nook."
+          description="Save your first thought, snippet or useful link."
           primaryAction={{
-            label: "Write a note",
+            label: "New note",
             href: "/dashboard/notes?new=1",
           }}
           secondaryAction={{
-            label: "Save a link",
+            label: "Save link",
             href: "/dashboard/bookmarks?new=1",
           }}
         />
       ) : (
-        <section className="home-recents">
-          <div className="home-recents-header">
-            <h2 className="home-recents-title">
-              {pinned.length > 0 ? "Pinned & recent" : "Recently saved"}
-            </h2>
-            <Link href="/dashboard/search" className="home-recents-link">
-              Search all
-            </Link>
-          </div>
+        <>
+          {pinned.length > 0 ? (
+            <section className="home-section" aria-labelledby="home-pinned">
+              <div className="home-recents-header">
+                <h2 id="home-pinned" className="home-recents-title">
+                  Pinned
+                </h2>
+              </div>
+              <ul className="home-recent-list home-pinned-list">
+                {pinned.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    onOpen={() =>
+                      router.push(getItemHref(item.type as ItemType, item.id))
+                    }
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
-          <ul className="home-recent-list">
-            {pinned.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  className="home-recent-row"
-                  onClick={() =>
-                    router.push(getItemHref(item.type as ItemType, item.id))
-                  }
-                >
-                  <CategoryChip type={item.type} showIcon={false} />
-                  <span className="home-recent-title">{displayTitle(item.title)}</span>
-                  {item.plainText ? (
-                    <span className="home-recent-preview">{item.plainText}</span>
-                  ) : null}
-                  <span className="home-recent-meta">
-                    {item.isPinned ? "Pinned · " : ""}
-                    {formatRelativeTime(item.updatedAt)}
-                  </span>
-                </button>
-              </li>
-            ))}
-            {recents.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  className="home-recent-row"
-                  onClick={() =>
-                    router.push(getItemHref(item.type as ItemType, item.id))
-                  }
-                >
-                  <CategoryChip type={item.type} showIcon={false} />
-                  <span className="home-recent-title">{displayTitle(item.title)}</span>
-                  {item.plainText ? (
-                    <span className="home-recent-preview">{item.plainText}</span>
-                  ) : null}
-                  <span className="home-recent-meta">{formatRelativeTime(item.updatedAt)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+          <section className="home-section" aria-labelledby="home-recent">
+            <div className="home-recents-header">
+              <h2 id="home-recent" className="home-recents-title">
+                Continue where you left off
+              </h2>
+              <Link href="/dashboard/search" className="home-recents-link">
+                Search all
+              </Link>
+            </div>
+            {recents.length === 0 && pinned.length > 0 ? (
+              <p className="home-subline">Pinned items are above. Capture something new anytime.</p>
+            ) : (
+              <ul className="home-recent-list">
+                {recents.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    onOpen={() =>
+                      router.push(getItemHref(item.type as ItemType, item.id))
+                    }
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
       )}
+
+      {isNew ? (
+        <div className="home-quick-links" aria-label="More ways to start">
+          <Link href="/dashboard/snippets?new=1" className="home-quick-link">
+            <Code2 size={16} strokeWidth={1.75} aria-hidden="true" />
+            <span>Save code</span>
+          </Link>
+          <Link href="/dashboard/notes?new=1" className="home-quick-link">
+            <BookOpen size={16} strokeWidth={1.75} aria-hidden="true" />
+            <span>New note</span>
+          </Link>
+          <Link href="/dashboard/bookmarks?new=1" className="home-quick-link">
+            <LinkIcon size={16} strokeWidth={1.75} aria-hidden="true" />
+            <span>Save link</span>
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

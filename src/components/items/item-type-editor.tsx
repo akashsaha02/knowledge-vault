@@ -5,7 +5,7 @@ import { SnippetEditor } from "@/components/items/snippet-editor";
 import { CommandEditor } from "@/components/items/command-editor";
 import { PromptEditor } from "@/components/items/prompt-editor";
 import { BookmarkEditor } from "@/components/items/bookmark-editor";
-import { EmptyState } from "@/components/ui/empty-state";
+import { AttachmentUploader } from "@/components/items/attachment-uploader";
 import { NoteColorPicker } from "@/components/items/note-color-picker";
 import type { ItemType } from "@/generated/prisma/client";
 import { completeChecklistTask } from "@/lib/onboarding-storage";
@@ -29,6 +29,7 @@ type ItemUpdateFields = {
 
 type ItemTypeEditorProps = {
   item: EditableItem;
+  workspaceId?: string;
   isNotionSplit?: boolean;
   onSaveNote: (json: unknown, plainText: string) => Promise<void>;
   onUpdate: (fields: ItemUpdateFields) => Promise<void>;
@@ -36,6 +37,7 @@ type ItemTypeEditorProps = {
 
 export function ItemTypeEditor({
   item,
+  workspaceId,
   isNotionSplit,
   onSaveNote,
   onUpdate,
@@ -151,12 +153,13 @@ export function ItemTypeEditor({
         />
       )}
 
-      {item.type === "FILE" && (
-        <EmptyState
-          title="This is a file item"
-          description="Add the actual file in Attachments below. FILE is a vault entry that holds uploads — it is not a separate storage type."
+      {item.type === "FILE" && workspaceId ? (
+        <AttachmentUploader
+          workspaceId={workspaceId}
+          itemId={item.id}
+          variant="dropzone"
         />
-      )}
+      ) : null}
     </>
   );
 }

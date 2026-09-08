@@ -19,5 +19,11 @@ export function detectCommandRisk(command: string): RiskLevel {
 export const RISK_LABELS: Record<RiskLevel, string> = {
   safe: "Safe",
   review: "Review first",
-  destructive: "Destructive",
+  destructive: "Potentially destructive",
+};
+
+export const RISK_HELP: Record<RiskLevel, string> = {
+  safe: "",
+  review: "This command uses elevated privileges. Review it before running.",
+  destructive: "This command can modify or delete files. Review it before running.",
 };

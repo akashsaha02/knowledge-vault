@@ -54,7 +54,7 @@ export function BookmarkEditor({
         siteName: data.siteName,
         description: data.description,
       });
-      toast.success("Bookmark metadata fetched");
+      toast.success("Page details fetched");
       schedule();
     } catch {
       toast.error("Could not fetch URL metadata");
@@ -71,7 +71,7 @@ export function BookmarkEditor({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com"
-          aria-label="Bookmark URL"
+          aria-label="Saved link URL"
           onKeyDown={(e) => {
             if (e.key === "Enter") void fetchMetadata();
           }}
@@ -93,7 +93,7 @@ export function BookmarkEditor({
           setTitle(e.target.value);
           schedule();
         }}
-        placeholder="Bookmark title"
+        placeholder="Page title"
         aria-label="Bookmark title"
       />
 

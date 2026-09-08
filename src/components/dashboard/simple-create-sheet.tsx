@@ -6,6 +6,7 @@ import {
   Folder,
   Link as LinkIcon,
   Paperclip,
+  Sparkles,
   Terminal,
   X,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const SHEET_ICONS: Record<string, React.ReactNode> = {
   bookmark: <LinkIcon size={16} strokeWidth={1.75} />,
   snippet: <Code size={16} strokeWidth={1.75} />,
   command: <Terminal size={16} strokeWidth={1.75} />,
+  prompt: <Sparkles size={16} strokeWidth={1.75} />,
   file: <Paperclip size={16} strokeWidth={1.75} />,
 };
 
@@ -48,10 +50,10 @@ export function SimpleCreateSheet({ open, onClose }: SimpleCreateSheetProps) {
         className="create-sheet"
         role="dialog"
         aria-modal="true"
-        aria-label="What do you want to make?"
+        aria-label="What do you want to create?"
       >
         <div className="create-sheet-header">
-          <span className="create-sheet-title">What do you want to make?</span>
+          <span className="create-sheet-title">New</span>
           <Button
             variant="ghost"
             size="sm"

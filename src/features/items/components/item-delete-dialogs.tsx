@@ -45,10 +45,9 @@ export function ItemDeleteDialogs({
       <FriendlyConfirmDialog
         open={trashOpen}
         title="Move to Trash?"
-        description="You can bring it back later from the Trash section."
+        description="You can bring it back later from Trash."
         confirmLabel="Move to Trash"
         cancelLabel="Keep it"
-        danger
         onConfirm={onConfirmTrash}
         onCancel={onCancelTrash}
       />
@@ -62,7 +61,6 @@ export function ItemDeleteDialogs({
         }
         confirmLabel="Move to Trash"
         cancelLabel="Keep it"
-        danger
         onConfirm={onConfirmCardTrash}
         onCancel={onCancelCard}
       />

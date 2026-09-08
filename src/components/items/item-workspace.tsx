@@ -8,15 +8,22 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ItemListCard } from "@/components/items/item-list-card";
 import { ItemDetailToolbar } from "@/components/items/item-detail-toolbar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHint } from "@/components/onboarding/page-hint";
 import { ContentFade } from "@/components/ui/content-fade";
 import { ItemDetailSkeleton, ItemGridSkeleton, ItemListSkeleton } from "@/components/ui/loading-skeleton";
 import { NoteColorPicker } from "@/components/items/note-color-picker";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { WorkspaceSplitLayout } from "@/components/items/workspace-split-layout";
 import { ItemTypeEditor } from "@/components/items/item-type-editor";
 import { CodeTypeTabs } from "@/components/items/code-type-tabs";
@@ -62,6 +69,7 @@ export function ItemWorkspace({
   collectionId,
   initialItems,
 }: ItemWorkspaceProps) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const ws = useItemWorkspace({
     workspaceId,
     type,
@@ -118,7 +126,7 @@ export function ItemWorkspace({
         onArchive={status === "ACTIVE" ? () => void ws.handleCardArchive(item) : undefined}
         onRestore={status === "TRASHED" ? () => void ws.handleCardRestore(item) : undefined}
         onDelete={
-          status !== "TRASHED" ? () => ws.setCardDeleteTarget(item) : undefined
+          status !== "TRASHED" ? () => void ws.handleCardDelete(item) : undefined
         }
         onPermanentDelete={
           status === "TRASHED"
@@ -134,7 +142,12 @@ export function ItemWorkspace({
       <aside className="item-workspace-list" aria-label={`${title} list`}>
         <div className="item-workspace-list-header">
           {types?.length ? (
-            <CodeTypeTabs value={ws.codeTab} onChange={ws.setCodeTab} />
+            <>
+              <PageHint id="code">
+                Save snippets and terminal commands you want to reuse.
+              </PageHint>
+              <CodeTypeTabs value={ws.codeTab} onChange={ws.setCodeTab} />
+            </>
           ) : null}
           <div className="workspace-list-toolbar">
             {ws.canCreate ? (
@@ -298,12 +311,24 @@ export function ItemWorkspace({
                 void ws.updateSelectedField({ isFavorite: !selected.isFavorite })
               }
               onShare={status === "TRASHED" ? undefined : () => ws.setShareOpen(true)}
+              onDetails={
+                status === "TRASHED" ? undefined : () => setDetailsOpen(true)
+              }
               onArchive={
                 status === "ACTIVE"
                   ? async () => {
                       try {
                         await archiveItemAction(workspaceId, selected.id);
-                        toast.success("Archived");
+                        toast.success("Archived", {
+                          action: {
+                            label: "Undo",
+                            onClick: () => {
+                              void restoreItemAction(workspaceId, selected.id).then(
+                                () => void ws.loadItems(),
+                              );
+                            },
+                          },
+                        });
                         ws.closeDetail();
                         void ws.loadItems();
                       } catch (error) {
@@ -329,7 +354,27 @@ export function ItemWorkspace({
               onDelete={() =>
                 status === "TRASHED"
                   ? ws.setPermanentDeleteDialogOpen(true)
-                  : ws.setDeleteDialogOpen(true)
+                  : void (async () => {
+                      try {
+                        await trashItemAction(workspaceId, selected.id);
+                        toast.success("Moved to Trash", {
+                          action: {
+                            label: "Undo",
+                            onClick: () => {
+                              void restoreItemAction(workspaceId, selected.id).then(
+                                () => void ws.loadItems(),
+                              );
+                            },
+                          },
+                        });
+                        ws.closeDetail();
+                        void ws.loadItems();
+                      } catch (error) {
+                        toast.error(
+                          getActionErrorMessage(error, "Could not move to Trash"),
+                        );
+                      }
+                    })()
               }
               onPermanentDelete={
                 status === "TRASHED"
@@ -347,40 +392,42 @@ export function ItemWorkspace({
 
             <ItemTypeEditor
               item={selected}
+              workspaceId={workspaceId}
               isNotionSplit={isNotionSplit}
               onSaveNote={ws.handleSave}
               onUpdate={ws.updateSelectedField}
             />
 
-            {selected.tags?.length ? (
-              <div className="flex flex-wrap gap-2">
-                {selected.tags.map(
-                  (entry: { tag: { id: string; name: string } }) => (
-                    <Badge key={entry.tag.id} variant="secondary">
-                      {entry.tag.name}
-                    </Badge>
-                  ),
-                )}
-              </div>
-            ) : null}
-
-            <ItemOrganizePanel
-              workspaceId={workspaceId}
-              itemId={selected.id}
-              projectId={selected.projectId}
-              collectionId={selected.collectionId}
-              tagIds={ws.tagIds}
-              onUpdate={async (fields) => {
-                await ws.updateSelectedField(fields);
-              }}
-              onRestoreRevision={async (revision) => {
-                await ws.updateSelectedField({
-                  content: revision.content,
-                  plainText: revision.plainText,
-                });
-                toast.success("Restored to this version");
-              }}
-            />
+            <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+              <SheetContent
+                side="right"
+                className="w-full sm:max-w-md overflow-y-auto"
+              >
+                <SheetHeader>
+                  <SheetTitle>Details</SheetTitle>
+                </SheetHeader>
+                <div className="details-drawer-body">
+                  <ItemOrganizePanel
+                    className="item-organize-panel--drawer"
+                    workspaceId={workspaceId}
+                    itemId={selected.id}
+                    projectId={selected.projectId}
+                    collectionId={selected.collectionId}
+                    tagIds={ws.tagIds}
+                    onUpdate={async (fields) => {
+                      await ws.updateSelectedField(fields);
+                    }}
+                    onRestoreRevision={async (revision) => {
+                      await ws.updateSelectedField({
+                        content: revision.content,
+                        plainText: revision.plainText,
+                      });
+                      toast.success("Restored to this version");
+                    }}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </>
@@ -454,12 +501,17 @@ export function ItemWorkspace({
     <div className="item-list-page">
       <div className="item-list-toolbar">
         {types?.length ? (
-          <CodeTypeTabs value={ws.codeTab} onChange={ws.setCodeTab} />
+          <>
+            <PageHint id="code">
+              Save snippets and terminal commands you want to reuse.
+            </PageHint>
+            <CodeTypeTabs value={ws.codeTab} onChange={ws.setCodeTab} />
+          </>
         ) : null}
         {ws.canCreate ? (
           <Button onClick={() => void ws.handleCreate()} className="item-new-btn">
             <Plus className="h-4 w-4" />
-            New {ws.codeTab === "commands" ? "command" : types?.length ? "snippet" : title.replace(/s$/, "").toLowerCase()}
+            New {ws.codeTab === "commands" ? "command" : types?.length ? "snippet" : title === "Saved Links" ? "saved link" : title.replace(/s$/, "").toLowerCase()}
           </Button>
         ) : null}
         {renderCreateNoteColorPicker()}
@@ -510,14 +562,23 @@ export function ItemWorkspace({
         <EmptyState
           title={
             status === "TRASHED"
-              ? "Trash is empty"
-              : `No ${title.toLowerCase()} yet`
+              ? "Trash is empty."
+              : status === "ARCHIVED"
+                ? "Nothing archived."
+                : `No ${title.toLowerCase()} yet.`
           }
           description={emptyDescription}
           primaryAction={
             ws.canCreate
               ? {
-                  label: `Create ${title.replace(/s$/, "").toLowerCase()}`,
+                  label:
+                    title === "Notes"
+                      ? "New note"
+                      : title === "Saved Links"
+                        ? "Save link"
+                        : title === "Code"
+                          ? "Save code"
+                          : `New ${title.replace(/s$/, "").toLowerCase()}`,
                   onClick: () => void ws.handleCreate(),
                 }
               : undefined

@@ -2,7 +2,7 @@
 
 Personal knowledge vault — notes, links, code, and files in one place.
 
-**Tagline:** Your colorful corner for ideas
+**Tagline:** Your space for things worth keeping
 
 ## Setup
 

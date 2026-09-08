@@ -3,6 +3,7 @@
 import {
   Archive,
   MoreHorizontal,
+  PanelRight,
   Pin,
   Share2,
   Star,
@@ -26,6 +27,7 @@ type ItemDetailToolbarProps = {
   onTogglePin: () => void;
   onToggleFavorite: () => void;
   onShare?: () => void;
+  onDetails?: () => void;
   onArchive?: () => void;
   onRestore?: () => void;
   onDelete: () => void;
@@ -40,6 +42,7 @@ export function ItemDetailToolbar({
   onTogglePin,
   onToggleFavorite,
   onShare,
+  onDetails,
   onArchive,
   onRestore,
   onDelete,
@@ -88,7 +91,7 @@ export function ItemDetailToolbar({
           icon: Trash2,
           label: "Move to Trash",
           onClick: onDelete,
-          destructive: true,
+          destructive: false,
         }
       : null,
   ].filter(Boolean) as {
@@ -108,9 +111,9 @@ export function ItemDetailToolbar({
         <Button
           variant="ghost"
           size="icon"
-          title={isPinned ? "Unpin" : "Pin to top"}
+          title={isPinned ? "Unpin — keep this easy to reach" : "Pin — keep this easy to reach"}
           onClick={onTogglePin}
-          aria-label={isPinned ? "Unpin" : "Pin to top"}
+          aria-label={isPinned ? "Unpin" : "Pin — keep this easy to reach"}
           aria-pressed={isPinned}
           className={isPinned ? "item-toolbar-active" : ""}
         >
@@ -119,9 +122,9 @@ export function ItemDetailToolbar({
         <Button
           variant="ghost"
           size="icon"
-          title={isFavorite ? "Remove from favourites" : "Add to favourites"}
+          title={isFavorite ? "Remove favorite — mark as important" : "Favorite — mark as important"}
           onClick={onToggleFavorite}
-          aria-label={isFavorite ? "Remove from favourites" : "Add to favourites"}
+          aria-label={isFavorite ? "Remove from favorites" : "Favorite — mark as important"}
           aria-pressed={isFavorite}
           className={isFavorite ? "item-toolbar-active" : ""}
         >
@@ -136,6 +139,18 @@ export function ItemDetailToolbar({
             aria-label="Share item"
           >
             <Share2 className="h-4 w-4" />
+          </Button>
+        ) : null}
+        {onDetails ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Details"
+            onClick={onDetails}
+            aria-label="Open details"
+          >
+            <PanelRight className="h-4 w-4" />
+            Details
           </Button>
         ) : null}
         <DropdownMenu>

@@ -1,15 +1,9 @@
 "use client";
 
-import { ChevronDown, Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -54,9 +48,7 @@ export function MetadataPanel({
     void listTagsAction(workspaceId).then(setTags);
   }, [workspaceId]);
 
-  const selectedTagNames = tags
-    .filter((tag) => tagIds.includes(tag.id))
-    .map((tag) => tag.name);
+  const selectedTags = tags.filter((tag) => tagIds.includes(tag.id));
 
   async function handleCreateTag() {
     if (!newTag.trim()) return;
@@ -69,9 +61,8 @@ export function MetadataPanel({
   }
 
   return (
-    <aside className="metadata-panel" aria-label="Item metadata">
-      <p className="item-section-label">Organization</p>
-      <div className="flex w-full flex-col gap-4">
+    <aside className="metadata-panel" aria-label="Item details">
+      <div className="flex w-full flex-col gap-5">
         <div>
           <label className="metadata-label" htmlFor="meta-project">
             Project
@@ -94,6 +85,9 @@ export function MetadataPanel({
               ))}
             </SelectContent>
           </Select>
+          <p className="metadata-hint">
+            Group things related to something you&apos;re working on.
+          </p>
         </div>
         <div>
           <label className="metadata-label" htmlFor="meta-collection">
@@ -117,51 +111,62 @@ export function MetadataPanel({
               ))}
             </SelectContent>
           </Select>
+          <p className="metadata-hint">
+            Lightweight lists across types, like reading lists.
+          </p>
         </div>
         <div>
-          <label className="metadata-label" htmlFor="meta-tags">
+          <p className="metadata-label" id="meta-tags-label">
             Tags
-          </label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                id="meta-tags"
-                variant="outline"
-                className="w-full justify-between font-normal"
-              >
-                <span className="truncate">
-                  {selectedTagNames.length > 0
-                    ? selectedTagNames.join(", ")
-                    : "Add tags"}
-                </span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
-              {tags.map((tag) => (
-                <DropdownMenuCheckboxItem
-                  key={tag.id}
-                  checked={tagIds.includes(tag.id)}
-                  onCheckedChange={(checked) => {
-                    const nextTagIds = checked
-                      ? [...tagIds, tag.id]
-                      : tagIds.filter((id) => id !== tag.id);
-                    void onUpdate({ tagIds: nextTagIds });
-                    if (nextTagIds.length > 0) completeChecklistTask("tag");
-                  }}
+          </p>
+          <div className="tag-chip-row" aria-labelledby="meta-tags-label">
+            {selectedTags.map((tag) => (
+              <span key={tag.id} className="tag-chip">
+                {tag.name}
+                <button
+                  type="button"
+                  className="tag-chip-remove"
+                  aria-label={`Remove tag ${tag.name}`}
+                  onClick={() =>
+                    void onUpdate({
+                      tagIds: tagIds.filter((id) => id !== tag.id),
+                    })
+                  }
                 >
-                  {tag.name}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <X className="h-3 w-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <Select
+            value={NONE_VALUE}
+            onValueChange={(value) => {
+              if (value === NONE_VALUE || tagIds.includes(value)) return;
+              void onUpdate({ tagIds: [...tagIds, value] });
+              completeChecklistTask("tag");
+            }}
+          >
+            <SelectTrigger className="w-full mt-2" aria-label="Add existing tag">
+              <SelectValue placeholder="Add a tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_VALUE}>Add a tag</SelectItem>
+              {tags
+                .filter((tag) => !tagIds.includes(tag.id))
+                .map((tag) => (
+                  <SelectItem key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
           <div className="mt-2 flex w-full">
             <input
               id="meta-tag-input"
               className="metadata-tag-input flex-1"
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
-              placeholder="New tag name"
+              placeholder="New tag"
               aria-label="New tag name"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && newTag.trim()) {
@@ -173,6 +178,7 @@ export function MetadataPanel({
             <Button
               aria-label="Create tag"
               onClick={() => void handleCreateTag()}
+              className="rounded-l-none"
             >
               <Plus className="h-4 w-4" />
             </Button>

@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-export async function copyToClipboard(text: string) {
+export async function copyToClipboard(text: string, successMessage = "Copied") {
   await navigator.clipboard.writeText(text);
-  toast.success("Copied to clipboard");
+  toast.success(successMessage);
 }

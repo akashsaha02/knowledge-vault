@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Rocket, X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -69,8 +69,7 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
     <section className="onboarding-checklist" aria-label="Getting started checklist">
       <div className="onboarding-checklist-header">
         <h2 className="onboarding-checklist-title">
-          <Rocket className="onboarding-checklist-title-icon" aria-hidden="true" />
-          Getting started ({completedCount}/{CHECKLIST_TASKS.length} done)
+          Getting started ({completedCount}/{CHECKLIST_TASKS.length})
         </h2>
         <Button
           variant="ghost"

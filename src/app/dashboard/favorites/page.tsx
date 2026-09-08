@@ -4,7 +4,7 @@ export default function FavoritesPage() {
   return (
     <DashboardItemPage
       title="Favorites"
-      emptyDescription="Tap the star on something important to find it here"
+      emptyDescription="Mark something as important with the star. Favorites stay easy to find."
       favoritesOnly
     />
   );

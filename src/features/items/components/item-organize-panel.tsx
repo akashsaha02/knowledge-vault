@@ -20,6 +20,7 @@ type ItemOrganizePanelProps = {
     content: unknown;
     plainText: string;
   }) => Promise<void>;
+  className?: string;
 };
 
 export function ItemOrganizePanel({
@@ -30,9 +31,10 @@ export function ItemOrganizePanel({
   tagIds,
   onUpdate,
   onRestoreRevision,
+  className,
 }: ItemOrganizePanelProps) {
   return (
-    <section className="item-organize-panel" aria-label="Organize">
+    <section className={`item-organize-panel${className ? ` ${className}` : ""}`} aria-label="Details">
       <MetadataPanel
         workspaceId={workspaceId}
         projectId={projectId}
@@ -52,7 +54,7 @@ export function ItemOrganizePanel({
       <div className="item-organize-block">
         <p className="item-section-label">
           <History className="h-4 w-4" aria-hidden="true" />
-          Version history
+          History
         </p>
         <RevisionHistory
           workspaceId={workspaceId}

@@ -8,8 +8,8 @@ import { navIcon } from "@/lib/nav-icons";
 import {
   COLLAPSED_MORE_NAV,
   getSelectedNavKey,
-  MAIN_NAV,
   MORE_NAV,
+  NAV_GROUPS,
 } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
 
@@ -62,15 +62,22 @@ export function DashboardNavMenu({
   return (
     <div className="dashboard-nav-menu">
       <div className="dashboard-nav-main">
-        {MAIN_NAV.map((item) => (
-          <NavLink
-            key={item.key}
-            href={item.key}
-            label={item.label}
-            active={selectedKey === item.key}
-            collapsed={collapsed}
-            onNavigate={onNavigate}
-          />
+        {NAV_GROUPS.map((group) => (
+          <div key={group.id} className="nav-group">
+            {group.label && !collapsed ? (
+              <p className="nav-group-label">{group.label}</p>
+            ) : null}
+            {group.items.map((item) => (
+              <NavLink
+                key={item.key}
+                href={item.key}
+                label={item.label}
+                active={selectedKey === item.key}
+                collapsed={collapsed}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
         ))}
 
         {!collapsed ? (

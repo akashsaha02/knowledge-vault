@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { detectCommandRisk, RISK_LABELS } from "@/features/items/command.utils";
+import { detectCommandRisk, RISK_HELP, RISK_LABELS } from "@/features/items/command.utils";
 import { CodeMirrorEditor } from "@/components/editor/codemirror-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,18 +93,18 @@ export function CommandEditor({
             ))}
           </SelectContent>
         </Select>
-        <Badge
-          variant="outline"
-          className={
-            risk === "destructive"
-              ? "terminal-risk terminal-risk--destructive"
-              : risk === "review"
-                ? "terminal-risk terminal-risk--review"
-                : "terminal-risk terminal-risk--safe"
-          }
-        >
-          {RISK_LABELS[risk]}
-        </Badge>
+        {risk !== "safe" ? (
+          <Badge
+            variant="outline"
+            className={
+              risk === "destructive"
+                ? "terminal-risk terminal-risk--destructive"
+                : "terminal-risk terminal-risk--review"
+            }
+          >
+            {RISK_LABELS[risk]}
+          </Badge>
+        ) : null}
         <Button
           type="button"
           variant="secondary"
@@ -117,9 +117,12 @@ export function CommandEditor({
       </div>
 
       {risk !== "safe" ? (
-        <div className="terminal-risk-banner" role="alert">
+        <div className="terminal-risk-banner" role="status">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>{RISK_LABELS[risk]}</span>
+          <div>
+            <strong>{RISK_LABELS[risk]}</strong>
+            <p className="terminal-risk-helper">{RISK_HELP[risk]}</p>
+          </div>
         </div>
       ) : null}
 

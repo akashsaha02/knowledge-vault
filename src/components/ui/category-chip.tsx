@@ -14,9 +14,9 @@ const TYPE_CONFIG: Record<
   { label: string; className: string; icon: LucideIcon }
 > = {
   NOTE: { label: "Note", className: "category-chip-note", icon: FileText },
-  SNIPPET: { label: "Code", className: "category-chip-code", icon: Code },
-  COMMAND: { label: "Code", className: "category-chip-code", icon: Code },
-  BOOKMARK: { label: "Link", className: "category-chip-link", icon: Link },
+  SNIPPET: { label: "Snippet", className: "category-chip-code", icon: Code },
+  COMMAND: { label: "Command", className: "category-chip-code", icon: Code },
+  BOOKMARK: { label: "Saved Link", className: "category-chip-link", icon: Link },
   FILE: { label: "File", className: "category-chip-file", icon: Paperclip },
   PROMPT: { label: "Prompt", className: "category-chip-prompt", icon: Sparkles },
 };

@@ -138,7 +138,7 @@ export function CommandPalette({ workspaceId }: CommandPaletteProps) {
         <Command label="Command palette" className="w-full" shouldFilter={!showSearchResults}>
           <div className="p-3 pb-0">
             <Command.Input
-              placeholder="Search vault or type a command..."
+              placeholder="Search Nook..."
               value={query}
               onValueChange={setQuery}
             />
@@ -173,6 +173,20 @@ export function CommandPalette({ workspaceId }: CommandPaletteProps) {
               </Command.Group>
             ) : (
               <>
+                {recentItems.length > 0 ? (
+                  <Command.Group heading="Recent">
+                    {recentItems.map((item) => (
+                      <Command.Item
+                        key={item.id}
+                        onSelect={() => navigate(item.href)}
+                      >
+                        <span className="command-palette-item-title flex-1">{item.title}</span>
+                        <CategoryChip type={item.type} showIcon={false} />
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                ) : null}
+
                 <Command.Group heading="Create">
                   {CREATE_LINKS.map((cmd) => (
                     <Command.Item
@@ -180,7 +194,7 @@ export function CommandPalette({ workspaceId }: CommandPaletteProps) {
                       onSelect={() => navigate(cmd.href)}
                     >
                       {navIcon(cmd.href.split("?")[0])}
-                      <span className="command-palette-item-title">Create {cmd.label.toLowerCase()}</span>
+                      <span className="command-palette-item-title">{cmd.label}</span>
                     </Command.Item>
                   ))}
                 </Command.Group>
@@ -196,20 +210,6 @@ export function CommandPalette({ workspaceId }: CommandPaletteProps) {
                     </Command.Item>
                   ))}
                 </Command.Group>
-
-                {recentItems.length > 0 ? (
-                  <Command.Group heading="Recent">
-                    {recentItems.map((item) => (
-                      <Command.Item
-                        key={item.id}
-                        onSelect={() => navigate(item.href)}
-                      >
-                        <span className="command-palette-item-title flex-1">{item.title}</span>
-                        <CategoryChip type={item.type} showIcon={false} />
-                      </Command.Item>
-                    ))}
-                  </Command.Group>
-                ) : null}
 
                 {recentSearches.length > 0 ? (
                   <Command.Group heading="Recent searches">

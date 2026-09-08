@@ -4,7 +4,7 @@ export default function ArchivePage() {
   return (
     <DashboardItemPage
       title="Archive"
-      emptyDescription="Nothing has been archived yet"
+      emptyDescription="Remove from your active workspace without deleting. Nothing is here yet."
       status="ARCHIVED"
     />
   );
